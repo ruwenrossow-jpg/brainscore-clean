@@ -9,7 +9,7 @@
   <!-- Top Navigation (wenn nicht eingeloggt) -->
   {#if !$isAuthenticated}
     <div class="absolute top-4 right-4">
-      <a href="/auth" class="btn btn-ghost btn-sm text-black">
+      <a href="/auth" class="btn btn-ghost btn-sm text-black" data-sveltekit-preload-data="hover">
         Login / Registrieren
       </a>
     </div>
@@ -59,14 +59,14 @@
 
       <div class="card-actions flex-col justify-center pt-4 space-y-3">
         {#if $isAuthenticated}
-          <a href="/dashboard" class="btn btn-primary btn-lg w-full text-white hover:opacity-90 transition-opacity">
+          <a href="/dashboard" class="btn btn-primary btn-lg w-full text-white hover:opacity-90 transition-opacity" data-sveltekit-preload-data="hover">
             Zum Dashboard
           </a>
         {:else}
-          <a href="/auth" class="btn btn-primary btn-lg w-full text-white hover:opacity-90 transition-opacity">
+          <a href="/auth" class="btn btn-primary btn-lg w-full text-white hover:opacity-90 transition-opacity" data-sveltekit-preload-data="hover">
             Jetzt starten
           </a>
-          <a href="/test" class="btn btn-ghost btn-lg w-full text-black border border-gray-300">
+          <a href="/test" class="btn btn-ghost btn-lg w-full text-black border border-gray-300" data-sveltekit-preload-data="hover">
             Ohne Anmeldung testen
           </a>
         {/if}

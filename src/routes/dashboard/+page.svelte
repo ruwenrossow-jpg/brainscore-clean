@@ -12,7 +12,6 @@
   import CurrentScoreCard from '$lib/components/dashboard/CurrentScoreCard.svelte';
   import StatsCard from '$lib/components/dashboard/StatsCard.svelte';
   import SessionHistory from '$lib/components/dashboard/SessionHistory.svelte';
-  import BaseButton from '$lib/components/base/BaseButton.svelte';
   
   let loading = $state(true);
   let stats = $state<DashboardStats | null>(null);
@@ -51,10 +50,6 @@
       }
     }
   });
-  
-  function startTest() {
-    goto('/test');
-  }
   
   async function logout() {
     await auth.signOut();
@@ -98,18 +93,17 @@
         
         <!-- CTA Button -->
         <div class="text-center">
-          <BaseButton
-            onclick={startTest}
-            variant="primary"
-            size="lg"
-            disabled={loading}
+          <a 
+            href="/test" 
+            class="btn btn-primary btn-lg text-white"
+            data-sveltekit-preload-data="hover"
           >
             {#if stats && stats.totalTests === 0}
               🎯 Ersten Test starten
             {:else}
               🔄 Neuen Test starten
             {/if}
-          </BaseButton>
+          </a>
         </div>
         
         <!-- Stats -->

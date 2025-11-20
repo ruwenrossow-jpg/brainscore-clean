@@ -24,10 +24,10 @@
     </div>
 
     <div class="w-full space-y-3">
-      <a href="/dashboard" class="btn btn-primary btn-lg w-full text-white">
+      <a href="/dashboard" class="btn btn-primary btn-lg w-full text-white" data-sveltekit-preload-data="hover">
         Zum Dashboard
       </a>
-      <a href="/test" class="btn btn-ghost w-full text-gray-700">
+      <a href="/test" class="btn btn-ghost w-full text-gray-700" data-sveltekit-preload-data="hover">
         Nochmal testen
       </a>
     </div>

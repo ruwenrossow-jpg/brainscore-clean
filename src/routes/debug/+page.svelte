@@ -148,6 +148,6 @@
   </div>
   
   <div class="mt-6 text-center">
-    <a href="/" class="btn btn-ghost">← Zurück zur Startseite</a>
+    <a href="/" class="btn btn-ghost" data-sveltekit-preload-data="hover">← Zurück zur Startseite</a>
   </div>
 </div>

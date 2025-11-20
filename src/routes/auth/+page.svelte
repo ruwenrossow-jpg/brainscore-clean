@@ -61,7 +61,7 @@
 
     <!-- Back to Home -->
     <div class="text-center mt-6">
-      <a href="/" class="text-sm text-gray-600 hover:text-black">
+      <a href="/" class="text-sm text-gray-600 hover:text-black" data-sveltekit-preload-data="hover">
         ← Zurück zur Startseite
       </a>
     </div>
