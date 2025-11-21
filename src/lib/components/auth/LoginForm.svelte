@@ -30,18 +30,30 @@
     isLoading = true;
     errorMessage = '';
     
-    const { error, needsOnboarding } = await auth.signIn(email, password);
-    
-    if (error) {
-      errorMessage = 'Login fehlgeschlagen. Bitte Zugangsdaten prüfen.';
-      isLoading = false;
-    } else {
-      // Erfolg: Redirect basierend auf Onboarding-Status
-      if (needsOnboarding) {
-        goto('/onboarding');
+    try {
+      console.log('🔐 LoginForm: Starting sign in...');
+      const result = await auth.signIn(email, password);
+      
+      console.log('📥 LoginForm: Sign in result:', result);
+      
+      if (result.error) {
+        console.error('❌ LoginForm: Error occurred');
+        errorMessage = 'Login fehlgeschlagen. Bitte Zugangsdaten prüfen.';
+        isLoading = false;
       } else {
-        goto('/dashboard');
+        console.log('✅ LoginForm: Success! Redirecting...');
+        // Erfolg: Redirect basierend auf Onboarding-Status
+        if (result.needsOnboarding) {
+          goto('/onboarding');
+        } else {
+          goto('/dashboard');
+        }
+        // Loading bleibt true während Redirect
       }
+    } catch (e: any) {
+      console.error('💥 LoginForm: Exception:', e);
+      errorMessage = 'Ein unerwarteter Fehler ist aufgetreten.';
+      isLoading = false;
     }
   }
 </script>

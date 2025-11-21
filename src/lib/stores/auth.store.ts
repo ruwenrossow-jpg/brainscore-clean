@@ -55,27 +55,63 @@ export const auth = {
    * User einloggen
    */
   async signIn(email: string, password: string) {
-    const { data, error } = await AuthService.signIn({ email, password });
-    
-    if (error || !data) return { error };
-    
-    if (data.user) {
-      const { profile } = await AuthService.getProfile(data.user.id);
+    try {
+      console.log('🔐 Starting signIn...');
+      const { data, error } = await AuthService.signIn({ email, password });
       
-      // Check ob Onboarding benötigt wird
-      const needsOnboarding = await ProfileService.needsOnboarding(data.user.id);
+      if (error || !data) {
+        console.error('❌ SignIn error:', error);
+        return { error };
+      }
       
-      authStore.set({
-        user: data.user,
-        profile,
-        session: data.session,
-        loading: false
-      });
+      if (data.user) {
+        console.log('✅ User signed in:', data.user.email);
+        
+        // Profile laden (mit Timeout)
+        const profilePromise = AuthService.getProfile(data.user.id);
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Profile timeout')), 5000)
+        );
+        
+        let profile = null;
+        try {
+          const result = await Promise.race([profilePromise, timeoutPromise]) as any;
+          profile = result.profile;
+          console.log('📋 Profile loaded:', profile ? 'Yes' : 'No');
+        } catch (e) {
+          console.warn('⚠️ Profile load failed:', e);
+        }
+        
+        // Onboarding-Check (mit Timeout)
+        let needsOnboarding = false;
+        try {
+          const onboardingPromise = ProfileService.needsOnboarding(data.user.id);
+          const onboardingTimeout = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Onboarding check timeout')), 5000)
+          );
+          needsOnboarding = await Promise.race([onboardingPromise, onboardingTimeout]) as boolean;
+          console.log('🎯 Needs onboarding:', needsOnboarding);
+        } catch (e) {
+          console.warn('⚠️ Onboarding check failed, assuming false:', e);
+          needsOnboarding = !profile || !profile.onboarding_completed;
+        }
+        
+        authStore.set({
+          user: data.user,
+          profile,
+          session: data.session,
+          loading: false
+        });
+        
+        console.log('✅ Auth store updated');
+        return { error: null, needsOnboarding };
+      }
       
-      return { error: null, needsOnboarding };
+      return { error: null, needsOnboarding: false };
+    } catch (e: any) {
+      console.error('💥 SignIn exception:', e);
+      return { error: e };
     }
-    
-    return { error: null };
   },
 
   /**
