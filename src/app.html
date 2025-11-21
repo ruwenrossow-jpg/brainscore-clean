@@ -2,15 +2,24 @@
 <html lang="de" data-theme="brainscore">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
     <meta name="theme-color" content="#1e293b" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="BrainScore" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
+    <link rel="apple-touch-startup-image" href="/icon-512.png" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
     <title>BrainScore - Cognitive Performance Testing</title>
+    <style>
+      /* Prevent any accidental navigation that breaks PWA mode */
+      html { 
+        touch-action: manipulation;
+        -webkit-touch-callout: none;
+      }
+    </style>
     %sveltekit.head%
   </head>
   <body>

@@ -37,9 +37,16 @@
 </script>
 
 <button
+  type="button"
   class="btn {variantClass[variant]} {sizeClass[size]} {fullWidth ? 'w-full' : ''} hover:opacity-90 transition-opacity"
   {disabled}
-  {onclick}
+  onclick={(e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onclick && !disabled && !loading) {
+      onclick();
+    }
+  }}
 >
   {#if loading}
     <span class="loading loading-spinner"></span>
