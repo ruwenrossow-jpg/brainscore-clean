@@ -52,18 +52,47 @@
     const email = (document.getElementById('testEmail') as HTMLInputElement).value;
     const password = (document.getElementById('testPassword') as HTMLInputElement).value;
     
+    if (!email || !password) {
+      testResult = '❌ Bitte E-Mail und Passwort eingeben';
+      return;
+    }
+    
     testResult = '⏳ Testing Sign In...';
     try {
+      console.log('🔍 Attempting login with:', { email });
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
       
+      console.log('📥 Login response:', { data, error });
+      
       if (error) {
-        testResult = '❌ Sign In Error: ' + error.message;
+        testResult = `❌ Sign In Error: ${error.message}\n\nDetails: ${JSON.stringify(error, null, 2)}`;
+      } else if (data.user) {
+        // Check if email is confirmed
+        const emailConfirmed = data.user.email_confirmed_at ? '✅ Bestätigt' : '❌ NICHT bestätigt';
+        testResult = `✅ Sign In OK!\n\nUser: ${data.user.email}\nE-Mail: ${emailConfirmed}\nUser ID: ${data.user.id}\n\nSession Token: ${data.session?.access_token?.substring(0, 20)}...`;
       } else {
-        testResult = '✅ Sign In OK! User: ' + data.user?.email;
+        testResult = '❌ Unerwartete Antwort: User ist null';
       }
+    } catch (e: any) {
+      console.error('💥 Exception:', e);
+      testResult = `❌ Exception: ${e.message}\n\nStack: ${e.stack}`;
+    }
+  }
+  
+  async function checkEnvVars() {
+    testResult = '⏳ Checking Environment Variables...';
+    try {
+      const url = import.meta.env.VITE_SUPABASE_URL;
+      const key = import.meta.env.VITE_SUPABASE_KEY;
+      
+      testResult = `📋 Environment Check:\n\n` +
+                   `URL: ${url ? '✅ Set (' + url.substring(0, 30) + '...)' : '❌ Missing'}\n` +
+                   `KEY: ${key ? '✅ Set (' + key.substring(0, 20) + '...)' : '❌ Missing'}\n\n` +
+                   `Current Origin: ${window.location.origin}`;
     } catch (e: any) {
       testResult = '❌ Exception: ' + e.message;
     }
@@ -87,6 +116,19 @@
       {:else}
         <p class="text-gray-600 mt-2">Keine aktive Session</p>
       {/if}
+    </div>
+  </div>
+  
+  <!-- Check Environment -->
+  <div class="card bg-base-200 shadow-lg mb-6">
+    <div class="card-body">
+      <h2 class="card-title">Environment Check</h2>
+      <p class="text-sm text-gray-600 mb-4">
+        Überprüfe Supabase Credentials
+      </p>
+      <button class="btn btn-secondary" onclick={checkEnvVars}>
+        Check Environment
+      </button>
     </div>
   </div>
   
