@@ -13,7 +13,7 @@
 </script>
 
 <svelte:head>
-  <title>Login - BrainScore</title>
+  <title>Login - BrainrotAI</title>
 </svelte:head>
 
 <div class="min-h-screen bg-white flex items-center justify-center px-4 py-12">
@@ -23,7 +23,7 @@
     <!-- Header -->
     <div class="text-center mb-8">
       <a href="/" class="inline-block">
-        <h1 class="text-4xl font-bold text-black mb-2">BrainScore</h1>
+        <h1 class="text-4xl font-bold text-black mb-2">BrainrotAI</h1>
       </a>
       <p class="text-gray-600">Cognitive Performance Testing</p>
     </div>

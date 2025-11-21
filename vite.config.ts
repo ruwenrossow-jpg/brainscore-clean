@@ -37,8 +37,8 @@ export default defineConfig({
         ]
       },
       manifest: {
-        name: 'BrainScore',
-        short_name: 'BrainScore',
+        name: 'BrainrotAI',
+        short_name: 'BrainrotAI',
         description: 'Cognitive performance testing with SART',
         theme_color: '#1e293b',
         background_color: '#0f172a',

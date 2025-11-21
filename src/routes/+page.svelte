@@ -18,7 +18,7 @@
   <!-- Header -->
   <div class="text-center mb-12">
     <h1 class="text-5xl md:text-6xl font-bold text-black mb-3 tracking-tight">
-      BrainScore
+      BrainrotAI
     </h1>
     <p class="text-base md:text-lg text-gray-600 font-light">
       Cognitive Performance Testing

@@ -80,7 +80,7 @@
   <!-- Goal Selection -->
   <div class="form-control w-full">
     <label class="label" for="goal">
-      <span class="label-text text-black font-medium">Warum nutzt du BrainScore?</span>
+      <span class="label-text text-black font-medium">Warum nutzt du BrainrotAI?</span>
     </label>
     <select 
       id="goal" 

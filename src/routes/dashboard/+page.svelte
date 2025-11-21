@@ -48,7 +48,7 @@
 </script>
 
 <svelte:head>
-  <title>Dashboard | BrainScore</title>
+  <title>Dashboard | BrainrotAI</title>
 </svelte:head>
 
 <div class="min-h-screen bg-white">
@@ -64,7 +64,7 @@
       <div class="container mx-auto px-4 py-6">
         <div class="flex justify-between items-center">
           <div>
-            <h1 class="text-3xl font-bold">BrainScore Dashboard</h1>
+            <h1 class="text-3xl font-bold">BrainrotAI Dashboard</h1>
             <p class="text-gray-600 mt-1">Willkommen zurück, {$currentProfile?.name || 'dort'}!</p>
           </div>
           <button class="btn btn-ghost" onclick={logout}>
@@ -146,7 +146,7 @@
     <!-- Footer -->
     <footer class="border-t border-gray-200 mt-16">
       <div class="container mx-auto px-4 py-6 text-center text-gray-600 text-sm">
-        <p>BrainScore © {new Date().getFullYear()} • Deine persönliche Konzentrationsanalyse</p>
+        <p>BrainrotAI © {new Date().getFullYear()} • Deine persönliche Konzentrationsanalyse</p>
       </div>
     </footer>
 

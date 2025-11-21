@@ -18,8 +18,8 @@
   <!-- Welcome Icon -->
   <div class="text-center">
     <div class="text-6xl mb-4">🧠</div>
-    <h2 class="text-3xl font-bold text-black mb-2">
-      Willkommen bei BrainScore!
+    <h2 class="text-3xl font-bold text-black mb-4">
+      Willkommen bei BrainrotAI!
     </h2>
     <p class="text-gray-600">
       Lass uns dein Profil einrichten

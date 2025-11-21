@@ -55,7 +55,7 @@
 </script>
 
 <svelte:head>
-  <title>Onboarding - BrainScore</title>
+  <title>Onboarding - BrainrotAI</title>
 </svelte:head>
 
 <div class="min-h-screen bg-white flex items-center justify-center px-4 py-12">
