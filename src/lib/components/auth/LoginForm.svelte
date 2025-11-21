@@ -1,9 +1,8 @@
-/**
- * Login Form
- * E-Mail + Passwort Login
- */
-
 <script lang="ts">
+  /**
+   * Login Form
+   * E-Mail + Passwort Login
+   */
   import BaseButton from '$lib/components/base/BaseButton.svelte';
   import { auth } from '$lib/stores/auth.store';
   import { goto } from '$app/navigation';

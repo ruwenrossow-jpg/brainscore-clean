@@ -1,9 +1,8 @@
-/**
- * Dashboard Page
- * Main dashboard for logged-in users showing BrainScore and test history
- */
-
 <script lang="ts">
+  /**
+   * Dashboard Page
+   * Main dashboard for logged-in users showing BrainScore and test history
+   */
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { auth, isAuthenticated, currentProfile, needsOnboarding } from '$lib/stores/auth.store';
@@ -130,7 +129,7 @@
                   Starte mit deinem ersten Test, um eine Baseline zu erstellen!
                 {:else if stats && stats.totalTests < 5}
                   Absolviere mindestens 5 Tests für aussagekräftige Trends.
-                {:else if sessions.length > 0 && sessions[0].score < 150}
+                {:else if sessions.length > 0 && sessions[0].score < 60}
                   Versuche, dich vor dem Test 5 Minuten zu entspannen.
                 {:else}
                   Konsistenz ist der Schlüssel – teste regelmäßig zur gleichen Zeit!

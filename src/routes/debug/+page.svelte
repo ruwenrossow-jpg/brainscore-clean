@@ -1,9 +1,8 @@
-/**
- * Auth Debug Page
- * Zum Testen der Supabase-Verbindung
- */
-
 <script lang="ts">
+  /**
+   * Auth Debug Page
+   * Zum Testen der Supabase-Verbindung
+   */
   import { supabase } from '$lib/services/supabase.client';
   import { onMount } from 'svelte';
   

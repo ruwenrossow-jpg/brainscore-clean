@@ -1,9 +1,8 @@
-/**
- * Register Form
- * E-Mail + Passwort + Name Registrierung
- */
-
 <script lang="ts">
+  /**
+   * Register Form
+   * E-Mail + Passwort + Name Registrierung
+   */
   import BaseButton from '$lib/components/base/BaseButton.svelte';
   import { auth } from '$lib/stores/auth.store';
   

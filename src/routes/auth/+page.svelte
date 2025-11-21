@@ -1,9 +1,8 @@
-/**
- * Auth Page
- * Kombinierte Login/Register Seite mit Tabs
- */
-
 <script lang="ts">
+  /**
+   * Auth Page
+   * Kombinierte Login/Register Seite mit Tabs
+   */
   import AuthCard from '$lib/components/auth/AuthCard.svelte';
   import LoginForm from '$lib/components/auth/LoginForm.svelte';
   import RegisterForm from '$lib/components/auth/RegisterForm.svelte';

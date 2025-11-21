@@ -1,9 +1,8 @@
-/**
- * Session History Component
- * Displays a timeline/list of recent SART test sessions
- */
-
 <script lang="ts">
+  /**
+   * Session History Component
+   * Displays a timeline/list of recent SART test sessions
+   */
   import BaseCard from '../base/BaseCard.svelte';
   import type { SessionHistoryItem } from '$lib/services/dashboard.service';
   
@@ -25,9 +24,9 @@
   }
   
   function getScoreBadgeClass(score: number): string {
-    if (score >= 180) return 'badge-success';
-    if (score >= 150) return 'badge-info';
-    if (score >= 120) return 'badge-warning';
+    if (score >= 80) return 'badge-success';
+    if (score >= 60) return 'badge-info';
+    if (score >= 40) return 'badge-warning';
     return 'badge-error';
   }
 </script>
@@ -78,11 +77,11 @@
           
           <!-- Visual indicator -->
           <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center text-2xl">
-            {#if session.score >= 180}
+            {#if session.score >= 80}
               🎯
-            {:else if session.score >= 150}
+            {:else if session.score >= 60}
               ✨
-            {:else if session.score >= 120}
+            {:else if session.score >= 40}
               💪
             {:else}
               📚

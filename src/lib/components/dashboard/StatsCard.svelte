@@ -1,9 +1,8 @@
-/**
- * Stats Card Component
- * Displays aggregated statistics (7-day average, total tests, etc.)
- */
-
 <script lang="ts">
+  /**
+   * Stats Card Component
+   * Displays aggregated statistics (7-day average, total tests, etc.)
+   */
   import BaseCard from '../base/BaseCard.svelte';
   
   interface Props {

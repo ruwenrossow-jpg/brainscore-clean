@@ -1,9 +1,8 @@
-/**
- * Current BrainScore Card Component
- * Displays the user's latest BrainScore in a prominent card
- */
-
 <script lang="ts">
+  /**
+   * Current BrainScore Card Component
+   * Displays the user's latest BrainScore in a prominent card
+   */
   import BaseCard from '../base/BaseCard.svelte';
   
   interface Props {
@@ -26,17 +25,17 @@
       <div class="text-7xl font-bold mb-2">
         {score}
       </div>
-      <p class="text-gray-600">von 225 Punkten</p>
+      <p class="text-gray-600">von 100 Punkten</p>
       
       <!-- Score interpretation -->
       <div class="mt-6 text-sm">
-        {#if score >= 180}
+        {#if score >= 80}
           <div class="badge badge-success badge-lg">Ausgezeichnet 🎯</div>
           <p class="mt-2 text-gray-600">Deine Konzentration ist exzellent!</p>
-        {:else if score >= 150}
+        {:else if score >= 60}
           <div class="badge badge-info badge-lg">Sehr gut ✨</div>
           <p class="mt-2 text-gray-600">Du bist fokussiert und aufmerksam.</p>
-        {:else if score >= 120}
+        {:else if score >= 40}
           <div class="badge badge-warning badge-lg">Gut 💪</div>
           <p class="mt-2 text-gray-600">Solide Leistung, mit Luft nach oben.</p>
         {:else}

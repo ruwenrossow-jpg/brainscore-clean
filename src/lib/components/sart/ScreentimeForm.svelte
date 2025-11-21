@@ -15,9 +15,8 @@
   
   let { sessionId, onComplete }: Props = $props();
   
-  // Bildschirmzeit
-  let hours = $state(0);
-  let minutes = $state(0);
+  // Bildschirmzeit (in 30-Min-Schritten)
+  let totalMinutes = $state(0);
   let activations = $state(0);
   
   // Top 3 Apps
@@ -31,7 +30,23 @@
   let isLoading = $state(false);
   let statusMessage = $state('');
   
-  let totalMinutes = $derived(hours * 60 + minutes);
+  // Generiere Zeitoptionen (0-1440 Min in 30-Min-Schritten = 0-24h)
+  const timeOptions = Array.from({ length: 49 }, (_, i) => i * 30);
+  
+  // Format: "3:30" aus 210 Minuten
+  function formatTime(minutes: number): string {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    return `${h}:${m.toString().padStart(2, '0')}`;
+  }
+  
+  // Typische Apps für Autocomplete
+  const commonApps = [
+    'Instagram', 'TikTok', 'WhatsApp', 'YouTube', 'Snapchat',
+    'Facebook', 'Messenger', 'Chrome', 'Safari', 'Spotify',
+    'Twitter/X', 'Reddit', 'Netflix', 'Twitch', 'Discord',
+    '📱 Social', '💬 Messaging', '🎥 Video', '🎮 Gaming', '📧 Produktivität'
+  ];
   
   async function handleSave() {
     if (!sessionId) {
@@ -81,43 +96,28 @@
     <div class="space-y-4">
       <h3 class="font-semibold text-lg text-black">📊 Bildschirmzeit</h3>
       
-      <div class="grid grid-cols-2 gap-4">
-        <div class="form-control w-full">
-          <label class="label" for="hours">
-            <span class="label-text text-black font-medium">Stunden</span>
-          </label>
-          <input 
-            id="hours" 
-            type="number" 
-            min="0"
-            max="24"
-            placeholder="z.B. 3"
-            class="input input-bordered w-full text-lg bg-white border-gray-300 focus:border-black" 
-            bind:value={hours} 
-          />
-        </div>
-
-        <div class="form-control w-full">
-          <label class="label" for="minutes">
-            <span class="label-text text-black font-medium">Minuten</span>
-          </label>
-          <input 
-            id="minutes" 
-            type="number" 
-            min="0"
-            max="59"
-            placeholder="z.B. 45"
-            class="input input-bordered w-full text-lg bg-white border-gray-300 focus:border-black" 
-            bind:value={minutes} 
-          />
-        </div>
+      <div class="form-control w-full">
+        <label class="label" for="screentime">
+          <span class="label-text text-black font-medium">Gesamte Bildschirmzeit (letzte 24h)</span>
+        </label>
+        <select 
+          id="screentime"
+          class="select select-bordered w-full text-lg bg-white border-gray-300 focus:border-black"
+          bind:value={totalMinutes}
+        >
+          <option value={0}>Keine Angabe</option>
+          {#each timeOptions as minutes}
+            {#if minutes > 0}
+              <option value={minutes}>
+                {formatTime(minutes)} {minutes >= 60 ? 'Stunden' : 'Minuten'}
+              </option>
+            {/if}
+          {/each}
+        </select>
+        <label class="label">
+          <span class="label-text-alt text-gray-500">In 30-Minuten-Schritten wählbar</span>
+        </label>
       </div>
-
-      {#if totalMinutes > 0}
-        <div class="text-center p-2 bg-gray-100 rounded">
-          <p class="text-sm text-gray-600">Gesamt: <strong>{totalMinutes} Minuten</strong></p>
-        </div>
-      {/if}
 
       <div class="form-control w-full">
         <label class="label" for="activations">
@@ -128,10 +128,15 @@
           id="activations" 
           type="number" 
           min="0"
-          placeholder="z.B. 65"
+          max="500"
+          step="10"
+          placeholder="z.B. 70"
           class="input input-bordered w-full text-lg bg-white border-gray-300 focus:border-black" 
           bind:value={activations} 
         />
+        <label class="label">
+          <span class="label-text-alt text-gray-500">Max. 500 (≈ alle 3 Min über 24h)</span>
+        </label>
       </div>
     </div>
 
@@ -140,17 +145,18 @@
     <!-- Top 3 Apps -->
     <div class="space-y-4">
       <h3 class="font-semibold text-lg text-black">📱 Top 3 Apps (optional)</h3>
-      <p class="text-xs text-gray-500">Die Apps mit den meisten Aktivierungen</p>
+      <p class="text-xs text-gray-500">Die Apps mit den meisten Aktivierungen oder Kategorien</p>
       
       <!-- App 1 -->
       <div class="grid grid-cols-2 gap-4">
         <div class="form-control w-full">
           <label class="label" for="app1">
-            <span class="label-text text-black">1. App-Name</span>
+            <span class="label-text text-black">1. App-Name / Kategorie</span>
           </label>
           <input 
             id="app1" 
             type="text" 
+            list="app-suggestions"
             placeholder="z.B. Instagram"
             class="input input-bordered w-full bg-white border-gray-300 focus:border-black" 
             bind:value={app1Name} 
@@ -164,6 +170,7 @@
             id="app1Act" 
             type="number" 
             min="0"
+            step="5"
             placeholder="z.B. 25"
             class="input input-bordered w-full bg-white border-gray-300 focus:border-black" 
             bind:value={app1Activations} 
@@ -175,11 +182,12 @@
       <div class="grid grid-cols-2 gap-4">
         <div class="form-control w-full">
           <label class="label" for="app2">
-            <span class="label-text text-black">2. App-Name</span>
+            <span class="label-text text-black">2. App-Name / Kategorie</span>
           </label>
           <input 
             id="app2" 
             type="text" 
+            list="app-suggestions"
             placeholder="z.B. WhatsApp"
             class="input input-bordered w-full bg-white border-gray-300 focus:border-black" 
             bind:value={app2Name} 
@@ -193,7 +201,8 @@
             id="app2Act" 
             type="number" 
             min="0"
-            placeholder="z.B. 18"
+            step="5"
+            placeholder="z.B. 20"
             class="input input-bordered w-full bg-white border-gray-300 focus:border-black" 
             bind:value={app2Activations} 
           />
@@ -204,11 +213,12 @@
       <div class="grid grid-cols-2 gap-4">
         <div class="form-control w-full">
           <label class="label" for="app3">
-            <span class="label-text text-black">3. App-Name</span>
+            <span class="label-text text-black">3. App-Name / Kategorie</span>
           </label>
           <input 
             id="app3" 
             type="text" 
+            list="app-suggestions"
             placeholder="z.B. TikTok"
             class="input input-bordered w-full bg-white border-gray-300 focus:border-black" 
             bind:value={app3Name} 
@@ -222,12 +232,20 @@
             id="app3Act" 
             type="number" 
             min="0"
-            placeholder="z.B. 12"
+            step="5"
+            placeholder="z.B. 15"
             class="input input-bordered w-full bg-white border-gray-300 focus:border-black" 
             bind:value={app3Activations} 
           />
         </div>
       </div>
+      
+      <!-- Datalist für Autocomplete -->
+      <datalist id="app-suggestions">
+        {#each commonApps as app}
+          <option value={app}></option>
+        {/each}
+      </datalist>
     </div>
 
     {#if statusMessage}

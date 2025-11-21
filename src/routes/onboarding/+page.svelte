@@ -1,15 +1,14 @@
-/**
- * Onboarding Page
- * Multi-Step Flow: Welcome → Form → Complete
- * 
- * ARCHITEKTUR:
- * - State Machine Pattern (wie SART-Test)
- * - Prüft ob User eingeloggt ist
- * - Speichert Profil in DB
- * - Redirect zu Dashboard nach Completion
- */
-
 <script lang="ts">
+  /**
+   * Onboarding Page
+   * Multi-Step Flow: Welcome → Form → Complete
+   * 
+   * ARCHITEKTUR:
+   * - State Machine Pattern (wie SART-Test)
+   * - Prüft ob User eingeloggt ist
+   * - Speichert Profil in DB
+   * - Redirect zu Dashboard nach Completion
+   */
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { auth, currentUser } from '$lib/stores/auth.store';

@@ -1,9 +1,8 @@
-/**
- * Onboarding Form
- * Schritt 2: Name & Ziel erfassen
- */
-
 <script lang="ts">
+  /**
+   * Onboarding Form
+   * Schritt 2: Name & Ziel erfassen
+   */
   import BaseButton from '$lib/components/base/BaseButton.svelte';
   
   interface Props {

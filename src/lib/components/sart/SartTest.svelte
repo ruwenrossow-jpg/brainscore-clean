@@ -8,7 +8,7 @@
    * - Performance.now() für präzise Zeitmessung
    */
   
-  import { onDestroy } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import { SartService } from '$lib/services/sart.service';
   import { currentUser } from '$lib/stores/auth.store';
   import type { SartTrial, SartMetrics, SartConfig } from '$lib/types/sart.types';
@@ -26,23 +26,47 @@
     noGoDigit: 3
   };
   
+  type TestState = 'idle' | 'countdown' | 'running' | 'finished';
+  
+  let testState: TestState = $state('idle');
+  let countdownValue = $state(3);
   let trials: SartTrial[] = $state([]);
   let currentIndex = $state(0);
-  let testRunning = $state(false);
   let showingMask = $state(false);
   let trialStartTime = 0;
   let timer: number | null = null;
+  let countdownTimer: number | null = null;
   
   // Reactive: Aktuelles Trial
   let currentTrial = $derived(trials[currentIndex]);
   let currentDigit = $derived(currentTrial?.digit || 0);
   let progress = $derived((currentIndex / CONFIG.totalTrials) * 100);
   
-  // Start Test
-  trials = SartService.generateTrials(CONFIG);
-  currentIndex = 0;
-  testRunning = true;
-  nextTrial();
+  // Countdown starten beim Mount
+  onMount(() => {
+    testState = 'countdown';
+    countdownValue = 3;
+    
+    countdownTimer = window.setInterval(() => {
+      countdownValue -= 1;
+      if (countdownValue === 0) {
+        if (countdownTimer) clearInterval(countdownTimer);
+        startTest();
+      }
+    }, 1000);
+    
+    return () => {
+      if (countdownTimer) clearInterval(countdownTimer);
+    };
+  });
+  
+  function startTest() {
+    // Initialisiere Test
+    trials = SartService.generateTrials(CONFIG);
+    currentIndex = 0;
+    testState = 'running';
+    nextTrial();
+  }
   
   function nextTrial() {
     if (currentIndex >= trials.length) {
@@ -67,7 +91,7 @@
   }
   
   function handleRespond() {
-    if (!testRunning || currentIndex >= trials.length || showingMask) return;
+    if (testState !== 'running' || currentIndex >= trials.length || showingMask) return;
     
     const trial = trials[currentIndex];
     const reactionTime = performance.now() - trialStartTime;
@@ -79,7 +103,7 @@
   }
   
   async function finishTest() {
-    testRunning = false;
+    testState = 'finished';
     if (timer) clearTimeout(timer);
     
     const metrics = SartService.computeMetrics(trials);
@@ -91,6 +115,7 @@
   
   onDestroy(() => {
     if (timer) clearTimeout(timer);
+    if (countdownTimer) clearInterval(countdownTimer);
   });
 </script>
 
@@ -115,7 +140,14 @@
 
     <!-- Digit Display -->
     <div class="min-h-[300px] flex items-center justify-center my-8 p-8 bg-white rounded-lg border-2 border-gray-300 w-full">
-      {#if testRunning}
+      {#if testState === 'countdown'}
+        <div class="text-center">
+          <div class="text-9xl font-bold text-black mb-4">
+            {countdownValue}
+          </div>
+          <p class="text-gray-600 text-lg">Test startet gleich...</p>
+        </div>
+      {:else if testState === 'running'}
         {#if showingMask}
           <div class="text-8xl font-bold text-gray-300">
             ✱
@@ -125,7 +157,7 @@
             {currentDigit}
           </div>
         {/if}
-      {:else}
+      {:else if testState === 'finished'}
         <div class="text-center">
           <div class="loading loading-spinner loading-lg mb-4"></div>
           <p class="text-gray-600">Test wird ausgewertet...</p>
@@ -136,11 +168,18 @@
     <!-- Response Button -->
     <div class="w-full mt-4">
       <button 
-        class="btn btn-primary btn-lg w-full h-20 text-white text-xl hover:opacity-90 transition-opacity"
+        class="btn btn-lg w-full h-20 text-xl transition-opacity"
+        class:btn-primary={testState === 'running'}
+        class:btn-disabled={testState !== 'running'}
+        class:text-white={testState === 'running'}
         onclick={handleRespond}
-        disabled={!testRunning}
+        disabled={testState !== 'running'}
       >
-        Reagieren
+        {#if testState === 'countdown'}
+          Gleich geht's los...
+        {:else}
+          Reagieren
+        {/if}
       </button>
     </div>
 

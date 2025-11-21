@@ -1,9 +1,8 @@
-/**
- * Auth Card - Wrapper für Login/Register Forms
- * Nutzt bestehende BaseCard für konsistentes Design
- */
-
 <script lang="ts">
+  /**
+   * Auth Card - Wrapper für Login/Register Forms
+   * Nutzt bestehende BaseCard für konsistentes Design
+   */
   import BaseCard from '$lib/components/base/BaseCard.svelte';
   
   interface Props {

@@ -1,9 +1,8 @@
-/**
- * Onboarding Welcome Screen
- * Schritt 1: Begrüßung & Erklärung
- */
-
 <script lang="ts">
+  /**
+   * Onboarding Welcome Screen
+   * Schritt 1: Begrüßung & Erklärung
+   */
   import BaseButton from '$lib/components/base/BaseButton.svelte';
   
   interface Props {
