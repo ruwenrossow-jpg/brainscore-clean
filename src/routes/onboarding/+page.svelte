@@ -24,12 +24,8 @@
   let isLoading = $state(false);
   let errorMessage = $state('');
   
-  // Guard: Nur für eingeloggte User
-  onMount(() => {
-    if (!$currentUser) {
-      goto('/auth');
-    }
-  });
+  // KEINE CLIENT-SIDE GUARDS MEHR!
+  // Server-Guard (+page.server.ts) prüft Auth BEVOR die Seite rendert
   
   async function handleComplete(data: { name: string; goal: string }) {
     if (!$currentUser) return;
@@ -45,10 +41,8 @@
     );
     
     if (success) {
-      // Profile im Store aktualisieren
-      await auth.initialize();
-      
       // Weiterleitung zum Dashboard
+      // Profile wird automatisch neu geladen bei nächster Navigation
       setTimeout(() => {
         goto('/dashboard');
       }, 500);

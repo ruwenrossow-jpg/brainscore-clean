@@ -1,6 +1,10 @@
 <script lang="ts">
   /**
    * BaseButton - Einheitliches Button-Styling
+   * 
+   * WICHTIG: Unterstützt sowohl Form-Submission als auch Click-Handler
+   * - Wenn in <form>: type="submit" für Form-Submission
+   * - Wenn onclick gegeben: preventDefault + custom handler
    */
   
   interface Props {
@@ -9,6 +13,7 @@
     fullWidth?: boolean;
     disabled?: boolean;
     loading?: boolean;
+    type?: 'button' | 'submit';
     onclick?: () => void;
     children: any;
   }
@@ -19,6 +24,7 @@
     fullWidth = false,
     disabled = false,
     loading = false,
+    type = 'button',
     onclick,
     children
   }: Props = $props();
@@ -37,15 +43,19 @@
 </script>
 
 <button
-  type="button"
+  {type}
   class="btn {variantClass[variant]} {sizeClass[size]} {fullWidth ? 'w-full' : ''} hover:opacity-90 transition-opacity"
   {disabled}
   onclick={(e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (onclick && !disabled && !loading) {
-      onclick();
+    // Nur preventDefault wenn custom onclick handler
+    if (onclick) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!disabled && !loading) {
+        onclick();
+      }
     }
+    // Sonst: Native Form-Submission (bei type="submit")
   }}
 >
   {#if loading}

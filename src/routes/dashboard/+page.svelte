@@ -17,20 +17,10 @@
   let stats = $state<DashboardStats | null>(null);
   let sessions = $state<SessionHistoryItem[]>([]);
   
-  // Client-side Guards
+  // KEINE CLIENT-SIDE GUARDS MEHR!
+  // Server-Guard (+page.server.ts) prüft Auth BEVOR die Seite rendert
+  
   onMount(async () => {
-    // Guard 1: Nicht eingeloggt → Login
-    if (!$isAuthenticated) {
-      goto('/auth');
-      return;
-    }
-    
-    // Guard 2: Onboarding nicht abgeschlossen → Onboarding
-    if ($needsOnboarding) {
-      goto('/onboarding');
-      return;
-    }
-    
     // Load dashboard data
     if ($auth.user) {
       try {

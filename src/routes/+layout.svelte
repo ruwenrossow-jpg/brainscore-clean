@@ -1,19 +1,26 @@
 <script lang="ts">
   /**
    * Root Layout
-   * Initialisiert Auth beim App-Start und PWA-Navigation
+   * 
+   * NEUE ARCHITEKTUR:
+   * - Empfängt Session vom Server (+layout.server.ts)
+   * - Hydriert Store mit Server-Daten
+   * - Startet Auth Listener für Live-Updates
+   * - PWA Navigation Handling
    */
   import '../app.css';
   import { onMount } from 'svelte';
   import { auth } from '$lib/stores/auth.store';
+  import type { LayoutData } from './$types';
   
-  let { children } = $props();
+  let { data, children }: { data: LayoutData; children: any } = $props();
 
-  // Auth beim App-Start initialisieren
+  // Store mit Server-Session hydrieren
   onMount(() => {
-    auth.initialize();
+    // Hydrate Store mit Server-Daten (aus +layout.server.ts)
+    auth.hydrate(data.session);
     
-    // Auth Listener für Live-Updates
+    // Auth Listener für Live-Updates (Token Refresh, andere Tabs, etc.)
     const { data: subscription } = auth.setupAuthListener();
     
     // PWA: Verhindere, dass Links die App verlassen

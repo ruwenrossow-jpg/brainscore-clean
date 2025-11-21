@@ -31,27 +31,17 @@
     errorMessage = '';
     
     try {
-      console.log('🔐 LoginForm: Starting sign in...');
       const result = await auth.signIn(email, password);
       
-      console.log('📥 LoginForm: Sign in result:', result);
-      
       if (result.error) {
-        console.error('❌ LoginForm: Error occurred');
         errorMessage = 'Login fehlgeschlagen. Bitte Zugangsdaten prüfen.';
         isLoading = false;
       } else {
-        console.log('✅ LoginForm: Success! Redirecting...');
-        // Erfolg: Redirect basierend auf Onboarding-Status
-        if (result.needsOnboarding) {
-          goto('/onboarding');
-        } else {
-          goto('/dashboard');
-        }
-        // Loading bleibt true während Redirect
+        // Erfolg: Redirect zu Dashboard
+        // Server-Guard leitet automatisch zu /onboarding wenn nötig
+        goto('/dashboard');
       }
     } catch (e: any) {
-      console.error('💥 LoginForm: Exception:', e);
       errorMessage = 'Ein unerwarteter Fehler ist aufgetreten.';
       isLoading = false;
     }
@@ -97,6 +87,7 @@
   </div>
 
   <BaseButton 
+    type="submit"
     variant="primary" 
     size="lg" 
     fullWidth={true}

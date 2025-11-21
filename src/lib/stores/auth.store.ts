@@ -1,17 +1,23 @@
 /**
  * Auth Store
- * Svelte Store für globalen Auth-State
  * 
- * WARUM ein Store?
- * - Auth-State muss in vielen Komponenten verfügbar sein (Navbar, Guards, etc.)
- * - Reactive: UI aktualisiert sich automatisch bei Login/Logout
- * - Single Source of Truth
+ * ARCHITEKTUR (NEU):
+ * 1. Server (hooks.server.ts) → Session aus Cookie
+ * 2. Server (+layout.server.ts) → gibt Session an Client
+ * 3. Client (+layout.svelte) → hydrate() mit Server-Session
+ * 4. Store → hält State, keine Initiative mehr
+ * 
+ * ÄNDERUNGEN:
+ * - initialize() entfernt → hydrate(session) stattdessen
+ * - Keine Timeouts mehr
+ * - Einfacheres signIn (kein onboarding check)
+ * - Store ist "dumb" → bekommt Daten von außen
  */
 
 import { writable, derived } from 'svelte/store';
 import type { AuthState, User, UserProfile } from '$lib/types/auth.types';
+import type { Session } from '@supabase/supabase-js';
 import { AuthService } from '$lib/services/auth.service';
-import { ProfileService } from '$lib/services/profile.service';
 
 // Initialer State
 const initialState: AuthState = {
@@ -31,13 +37,10 @@ export const auth = {
   subscribe: authStore.subscribe,
 
   /**
-   * Session initialisieren (beim App-Start)
+   * Store mit Server-Session hydrieren
+   * Wird von +layout.svelte aufgerufen mit Server-Daten
    */
-  async initialize() {
-    authStore.update(state => ({ ...state, loading: true }));
-
-    const { session } = await AuthService.getSession();
-    
+  async hydrate(session: Session | null) {
     if (session?.user) {
       const { profile } = await AuthService.getProfile(session.user.id);
       authStore.set({
@@ -52,66 +55,32 @@ export const auth = {
   },
 
   /**
-   * User einloggen
+   * User einloggen (vereinfacht)
+   * - Keine Timeouts mehr
+   * - Kein Onboarding-Check (macht Server-Guard)
+   * - Lädt nur Profile
    */
   async signIn(email: string, password: string) {
-    try {
-      console.log('🔐 Starting signIn...');
-      const { data, error } = await AuthService.signIn({ email, password });
-      
-      if (error || !data) {
-        console.error('❌ SignIn error:', error);
-        return { error };
-      }
-      
-      if (data.user) {
-        console.log('✅ User signed in:', data.user.email);
-        
-        // Profile laden (mit Timeout)
-        const profilePromise = AuthService.getProfile(data.user.id);
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Profile timeout')), 5000)
-        );
-        
-        let profile = null;
-        try {
-          const result = await Promise.race([profilePromise, timeoutPromise]) as any;
-          profile = result.profile;
-          console.log('📋 Profile loaded:', profile ? 'Yes' : 'No');
-        } catch (e) {
-          console.warn('⚠️ Profile load failed:', e);
-        }
-        
-        // Onboarding-Check (mit Timeout)
-        let needsOnboarding = false;
-        try {
-          const onboardingPromise = ProfileService.needsOnboarding(data.user.id);
-          const onboardingTimeout = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Onboarding check timeout')), 5000)
-          );
-          needsOnboarding = await Promise.race([onboardingPromise, onboardingTimeout]) as boolean;
-          console.log('🎯 Needs onboarding:', needsOnboarding);
-        } catch (e) {
-          console.warn('⚠️ Onboarding check failed, assuming false:', e);
-          needsOnboarding = !profile || !profile.onboarding_completed;
-        }
-        
-        authStore.set({
-          user: data.user,
-          profile,
-          session: data.session,
-          loading: false
-        });
-        
-        console.log('✅ Auth store updated');
-        return { error: null, needsOnboarding };
-      }
-      
-      return { error: null, needsOnboarding: false };
-    } catch (e: any) {
-      console.error('💥 SignIn exception:', e);
-      return { error: e };
+    const { data, error } = await AuthService.signIn({ email, password });
+    
+    if (error || !data) {
+      return { error };
     }
+    
+    if (data.user) {
+      const { profile } = await AuthService.getProfile(data.user.id);
+      
+      authStore.set({
+        user: data.user,
+        profile,
+        session: data.session,
+        loading: false
+      });
+      
+      return { error: null };
+    }
+    
+    return { error: null };
   },
 
   /**
@@ -137,11 +106,10 @@ export const auth = {
 
   /**
    * Auth State Change Listener registrieren
+   * Synchronisiert Browser-State bei Session-Änderungen
    */
   setupAuthListener() {
     return AuthService.onAuthStateChange(async (event, session) => {
-      console.log('🔐 Auth event:', event);
-
       if (event === 'SIGNED_IN' && session?.user) {
         const { profile } = await AuthService.getProfile(session.user.id);
         authStore.set({
@@ -152,6 +120,12 @@ export const auth = {
         });
       } else if (event === 'SIGNED_OUT') {
         authStore.set({ ...initialState, loading: false });
+      } else if (event === 'TOKEN_REFRESHED' && session) {
+        // Token refresh: Update session, keep profile
+        authStore.update(state => ({
+          ...state,
+          session
+        }));
       }
     });
   }

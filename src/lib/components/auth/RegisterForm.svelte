@@ -115,6 +115,7 @@
   </div>
 
   <BaseButton 
+    type="submit"
     variant="primary" 
     size="lg" 
     fullWidth={true}
