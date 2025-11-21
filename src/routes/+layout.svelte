@@ -15,10 +15,15 @@
   
   let { data, children }: { data: LayoutData; children: any } = $props();
 
-  // Store mit Server-Session hydrieren
+  // Store mit Server-Daten hydrieren
   onMount(() => {
-    // Hydrate Store mit Server-Daten (aus +layout.server.ts)
-    auth.hydrate(data.session);
+    const start = performance.now();
+    
+    // Hydrate Store mit Server-Daten (Session + Profile)
+    auth.hydrate(data.session, data.profile as any);
+    
+    const duration = performance.now() - start;
+    console.log(`⚡ Auth hydration: ${duration.toFixed(2)}ms`);
     
     // Auth Listener für Live-Updates (Token Refresh, andere Tabs, etc.)
     const { data: subscription } = auth.setupAuthListener();

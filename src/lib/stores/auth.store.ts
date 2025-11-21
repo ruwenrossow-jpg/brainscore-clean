@@ -37,12 +37,12 @@ export const auth = {
   subscribe: authStore.subscribe,
 
   /**
-   * Store mit Server-Session hydrieren
-   * Wird von +layout.svelte aufgerufen mit Server-Daten
+   * Store mit Server-Daten hydrieren (OPTIMIERT)
+   * Profile kommt bereits vom Server (+layout.server.ts)
+   * → Kein zusätzlicher DB-Call mehr!
    */
-  async hydrate(session: Session | null) {
+  hydrate(session: Session | null, profile: UserProfile | null = null) {
     if (session?.user) {
-      const { profile } = await AuthService.getProfile(session.user.id);
       authStore.set({
         user: session.user,
         profile,
@@ -55,10 +55,10 @@ export const auth = {
   },
 
   /**
-   * User einloggen (vereinfacht)
-   * - Keine Timeouts mehr
-   * - Kein Onboarding-Check (macht Server-Guard)
-   * - Lädt nur Profile
+   * User einloggen (OPTIMIERT)
+   * - Profile wird beim nächsten Page-Load vom Server geladen
+   * - Kein extra DB-Call hier nötig!
+   * - Store wird mit basic user-info gesetzt, profile = null
    */
   async signIn(email: string, password: string) {
     const { data, error } = await AuthService.signIn({ email, password });
@@ -68,11 +68,10 @@ export const auth = {
     }
     
     if (data.user) {
-      const { profile } = await AuthService.getProfile(data.user.id);
-      
+      // Setze nur Session, Profile kommt beim Redirect vom Server
       authStore.set({
         user: data.user,
-        profile,
+        profile: null, // Wird nach Navigation geladen
         session: data.session,
         loading: false
       });
@@ -105,19 +104,16 @@ export const auth = {
   },
 
   /**
-   * Auth State Change Listener registrieren
-   * Synchronisiert Browser-State bei Session-Änderungen
+   * Auth State Change Listener (OPTIMIERT)
+   * - Bei SIGNED_IN: Page reload lädt Profile automatisch
+   * - Bei SIGNED_OUT: Clear store
+   * - Bei TOKEN_REFRESHED: Keep current state
    */
   setupAuthListener() {
-    return AuthService.onAuthStateChange(async (event, session) => {
+    return AuthService.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
-        const { profile } = await AuthService.getProfile(session.user.id);
-        authStore.set({
-          user: session.user,
-          profile,
-          session,
-          loading: false
-        });
+        // Trigger Page-Reload → Server lädt Profile
+        window.location.reload();
       } else if (event === 'SIGNED_OUT') {
         authStore.set({ ...initialState, loading: false });
       } else if (event === 'TOKEN_REFRESHED' && session) {

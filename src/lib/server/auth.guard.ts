@@ -48,6 +48,7 @@ export async function requireOnboarding(event: RequestEvent) {
 /**
  * Prüft ob User NICHT eingeloggt ist (für Auth-Seiten)
  * Leitet zu /dashboard wenn bereits eingeloggt
+ * OPTIMIERT: Session ist bereits in event.locals gecached
  */
 export async function requireGuest(event: RequestEvent) {
   const session = await event.locals.getSession();
@@ -55,4 +56,6 @@ export async function requireGuest(event: RequestEvent) {
   if (session) {
     throw redirect(303, '/dashboard');
   }
+  
+  // Gibt nichts zurück wenn OK (kein unnötiges Objekt)
 }

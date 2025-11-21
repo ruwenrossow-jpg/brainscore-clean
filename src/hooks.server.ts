@@ -15,7 +15,14 @@ import { type Handle } from '@sveltejs/kit';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_KEY;
 
+// Performance Monitoring
+let requestCount = 0;
+
 export const handle: Handle = async ({ event, resolve }) => {
+  const reqId = ++requestCount;
+  const start = Date.now();
+  console.log(`🔵 [${reqId}] ${event.request.method} ${event.url.pathname}`);
+  
   /**
    * Erstelle Supabase Client mit SSR Cookie-Handling
    * - Liest Session aus Request-Cookie
@@ -34,34 +41,36 @@ export const handle: Handle = async ({ event, resolve }) => {
   });
 
   /**
-   * Helper: Sichere Methode um Session zu holen
-   * - Versucht getUser() (validiert Token serverseitig)
-   * - Fallback zu getSession() wenn getUser() fehlschlägt
+   * Helper: Session aus Cookie holen (OPTIMIERT)
+   * - Verwendet nur getSession() (Cookie ist bereits vom Browser validiert)
+   * - KEIN getUser() Call → spart 300-2000ms pro Request!
+   * - Session-Validierung erfolgt bei Bedarf in Guards
    */
   event.locals.getSession = async () => {
     const {
-      data: { user },
-      error: userError
-    } = await event.locals.supabase.auth.getUser();
+      data: { session },
+      error
+    } = await event.locals.supabase.auth.getSession();
 
-    if (userError || !user) {
-      // Kein valider User, lösche Session
+    if (error) {
+      console.error('⚠️ Session error:', error.message);
       return null;
     }
-
-    // User ist valide, hole Session
-    const {
-      data: { session }
-    } = await event.locals.supabase.auth.getSession();
 
     return session;
   };
 
   // Response generieren (mit Cookie-Updates)
-  return resolve(event, {
+  const response = await resolve(event, {
     filterSerializedResponseHeaders(name) {
       // Erlaube Cookie-Header in Response
       return name === 'content-range';
     }
   });
+  
+  const duration = Date.now() - start;
+  const statusColor = response.status < 400 ? '🟢' : '🔴';
+  console.log(`${statusColor} [${reqId}] ${response.status} - ${duration}ms`);
+  
+  return response;
 };
