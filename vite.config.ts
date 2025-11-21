@@ -8,12 +8,34 @@ export default defineConfig({
     SvelteKitPWA({
       devOptions: {
         enabled: true,
-        type: 'module'
+        type: 'module',
+        navigateFallback: '/'
       },
       kit: {
         includeVersionFile: true
       },
       registerType: 'autoUpdate',
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2}'],
+        navigateFallback: '/',
+        navigateFallbackDenylist: [/^\/api/],
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/afoqkgepibevlqvnwsqq\.supabase\.co\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'supabase-api',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 5 * 60 // 5 minutes
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          }
+        ]
+      },
       manifest: {
         name: 'BrainScore',
         short_name: 'BrainScore',
@@ -24,6 +46,7 @@ export default defineConfig({
         orientation: 'portrait',
         scope: '/',
         start_url: '/',
+        id: '/',
         icons: [
           {
             src: '/icon-192.png',
