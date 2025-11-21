@@ -61,13 +61,20 @@ export const auth = {
    * - Store wird mit basic user-info gesetzt, profile = null
    */
   async signIn(email: string, password: string) {
+    console.log('🔐 [auth.store] signIn started');
+    const start = performance.now();
+    
     const { data, error } = await AuthService.signIn({ email, password });
+    const duration = performance.now() - start;
+    console.log(`🔐 [auth.store] AuthService.signIn: ${duration.toFixed(0)}ms`);
     
     if (error || !data) {
+      console.error('❌ [auth.store] signIn error:', error);
       return { error };
     }
     
     if (data.user) {
+      console.log('✅ [auth.store] User authenticated, updating store...');
       // Setze nur Session, Profile kommt beim Redirect vom Server
       authStore.set({
         user: data.user,
@@ -75,6 +82,7 @@ export const auth = {
         session: data.session,
         loading: false
       });
+      console.log('✅ [auth.store] Store updated');
       
       return { error: null };
     }
@@ -105,18 +113,26 @@ export const auth = {
 
   /**
    * Auth State Change Listener (OPTIMIERT)
-   * - Bei SIGNED_IN: Page reload lädt Profile automatisch
+   * - Bei SIGNED_IN: SKIP (signIn() handled es bereits)
    * - Bei SIGNED_OUT: Clear store
    * - Bei TOKEN_REFRESHED: Keep current state
+   * 
+   * WICHTIG: KEIN Reload bei SIGNED_IN!
+   * Login-Flow: signIn() → Store Update → goto('/dashboard') → Server lädt Profile
    */
   setupAuthListener() {
     return AuthService.onAuthStateChange((event, session) => {
+      console.log(`🔔 [auth.store] Auth event: ${event}`);
+      
       if (event === 'SIGNED_IN' && session?.user) {
-        // Trigger Page-Reload → Server lädt Profile
-        window.location.reload();
+        // SKIP - signIn() hat Store bereits gesetzt
+        // goto() in LoginForm navigiert zum Dashboard
+        console.log('ℹ️ [auth.store] SIGNED_IN event ignored (handled by signIn())');
       } else if (event === 'SIGNED_OUT') {
+        console.log('🚪 [auth.store] SIGNED_OUT - clearing store');
         authStore.set({ ...initialState, loading: false });
       } else if (event === 'TOKEN_REFRESHED' && session) {
+        console.log('🔄 [auth.store] TOKEN_REFRESHED - updating session');
         // Token refresh: Update session, keep profile
         authStore.update(state => ({
           ...state,

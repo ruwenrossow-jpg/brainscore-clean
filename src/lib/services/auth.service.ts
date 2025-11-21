@@ -41,10 +41,16 @@ export class AuthService {
    */
   static async signIn(credentials: LoginCredentials) {
     try {
+      console.log('🔑 [AuthService] signInWithPassword started');
+      const start = performance.now();
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email: credentials.email,
         password: credentials.password
       });
+      
+      const duration = performance.now() - start;
+      console.log(`🔑 [AuthService] Supabase signInWithPassword: ${duration.toFixed(0)}ms`);
 
       if (error) throw error;
       return { data, error: null };

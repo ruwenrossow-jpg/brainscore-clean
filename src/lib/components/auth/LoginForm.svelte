@@ -27,21 +27,33 @@
       return;
     }
     
+    console.log('🔑 [LoginForm] Submit started');
+    const submitStart = performance.now();
+    
     isLoading = true;
     errorMessage = '';
     
     try {
+      console.log('🔑 [LoginForm] Calling auth.signIn...');
+      const signInStart = performance.now();
       const result = await auth.signIn(email, password);
+      const signInDuration = performance.now() - signInStart;
+      console.log(`🔑 [LoginForm] auth.signIn completed: ${signInDuration.toFixed(0)}ms`);
       
       if (result.error) {
+        console.error('❌ [LoginForm] Login failed:', result.error);
         errorMessage = 'Login fehlgeschlagen. Bitte Zugangsdaten prüfen.';
         isLoading = false;
       } else {
-        // Erfolg: Redirect zu Dashboard
-        // Server-Guard leitet automatisch zu /onboarding wenn nötig
+        console.log('✅ [LoginForm] Login success! Navigating to /dashboard...');
+        const navStart = performance.now();
         goto('/dashboard');
+        console.log(`📤 [LoginForm] Navigation triggered: ${(performance.now() - navStart).toFixed(0)}ms`);
+        const totalDuration = performance.now() - submitStart;
+        console.log(`🏁 [LoginForm] Total login flow: ${totalDuration.toFixed(0)}ms`);
       }
     } catch (e: any) {
+      console.error('💥 [LoginForm] Exception:', e);
       errorMessage = 'Ein unerwarteter Fehler ist aufgetreten.';
       isLoading = false;
     }
