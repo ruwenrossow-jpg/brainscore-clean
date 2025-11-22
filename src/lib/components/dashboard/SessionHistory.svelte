@@ -54,29 +54,28 @@
   {:else}
     <div class="space-y-3">
       {#each sessions as session (session.id)}
-        <div class="flex items-center justify-between p-4 bg-base-200 rounded-lg hover:bg-base-300 transition-colors">
-          <div class="flex-1">
-            <div class="flex items-center gap-3 mb-2">
-              <div class={`badge ${getScoreBadgeClass(session.score)}`}>
-                {session.score} Punkte
-              </div>
-              <span class="text-sm text-gray-600">
-                {formatDateTime(session.createdAt)}
-              </span>
-            </div>
-            
-            <div class="text-sm text-gray-600 flex gap-4">
-              <span>
-                <strong>CE:</strong> {session.commissionErrors}
-              </span>
-              <span>
-                <strong>OE:</strong> {session.omissionErrors}
-              </span>
+        <div class="flex items-start gap-3 p-3 bg-base-200 rounded-lg hover:bg-base-300 transition-colors">
+          
+          <!-- Score Badge - Kompakt links -->
+          <div class="flex-shrink-0">
+            <div class={`badge ${getScoreBadgeClass(session.score)} badge-lg font-bold`}>
+              {session.score}
             </div>
           </div>
           
-          <!-- Visual indicator -->
-          <div class="w-12 h-12 rounded-full bg-white flex items-center justify-center text-2xl">
+          <!-- Content - Flexibel in der Mitte -->
+          <div class="flex-1 min-w-0">
+            <div class="text-sm text-gray-600 mb-1">
+              {formatDateTime(session.createdAt)}
+            </div>
+            <div class="text-xs text-gray-500 flex gap-3">
+              <span><strong>CE:</strong> {session.commissionErrors}</span>
+              <span><strong>OE:</strong> {session.omissionErrors}</span>
+            </div>
+          </div>
+          
+          <!-- Emoji - Kompakt rechts -->
+          <div class="flex-shrink-0 w-10 h-10 rounded-full bg-white flex items-center justify-center text-xl">
             {#if session.score >= 80}
               🎯
             {:else if session.score >= 60}
@@ -87,6 +86,7 @@
               📚
             {/if}
           </div>
+          
         </div>
       {/each}
     </div>
