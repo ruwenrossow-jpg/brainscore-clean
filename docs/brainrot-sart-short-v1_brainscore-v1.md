@@ -54,16 +54,17 @@ Brainrot-SART Short v1 ist SART-inspiriert, aber aufgrund der verlängerten Stim
 
 ### 3.2 Trial- und Blockstruktur
 
-- **Gesamtumfang**: 90 Trials.
-- **Struktur**: 10 Blöcke × 9 Trials.
-- **Pro Block** erscheinen alle Ziffern 1–9 genau einmal (Zufallsreihenfolge ohne Wiederholung).
-- **Pro Block gilt**: 
-  - genau 1 No-Go-Trial (Ziffer „3"),
-  - die No-Go-Ziffer steht weder an Position 1 noch an Position 9 (mindestens ein Go davor und danach).
+- **Gesamtumfang**: 60 Trials.
+- **Struktur**: Kontinuierliche Sequenz ohne sichtbare Blöcke.
+- **No-Go-Häufigkeit**: 7–8 No-Go-Trials (Ziffer „3") pro Test, entsprechend einer Rate von ca. 11–13 %.
+- **No-Go-Positionierung**:
+  - No-Go-Trials werden pseudozufällig über die Sequenz verteilt.
+  - Keine zwei aufeinanderfolgenden No-Go-Trials (kein „3,3"-Paar).
+  - Die ersten zwei Trials (Index 0, 1) und die letzten zwei Trials (Index 58, 59) enthalten niemals ein No-Go.
+- **Go-Trials**: Alle verbleibenden Positionen werden mit Go-Stimuli (Ziffern 1, 2, 4–9) pseudozufällig gefüllt.
 
-Es gibt keine explizite Pause zwischen den Blöcken für die Testperson. Die Blockstruktur dient:
-- der internen Strukturierung der Daten,
-- der optionalen späteren Analyse von Trends über Blöcke.
+**Interne Segmentierung (optional für Analysen)**:
+Für spätere Trend-Analysen (z. B. Ermüdungseffekte) kann die Sequenz intern in 6 Segmente à 10 Trials unterteilt werden. Diese Segmentierung ist für die Testperson nicht sichtbar und dient ausschließlich der nachträglichen Auswertung.
 
 ### 3.3 Antwortmodus und gültige Trials
 
@@ -83,8 +84,8 @@ Gültigkeit wird im Log pro Trial mit einem Boolean (z. B. isValid) festgehalten
 ### 4.1 Rohdaten pro Trial
 
 Für jeden Trial werden mindestens erfasst:
-- **trialIndex** (0–89)
-- **blockIndex** (0–9)
+- **trialIndex** (0–59)
+- **segmentIndex** (0–5, optional; interne Analysevariable für 6 Segmente à 10 Trials)
 - **stimulusDigit** (1–9)
 - **isNoGo** (true, wenn Ziffer = 3; sonst false)
 - **userResponded** (true/false)
@@ -96,8 +97,8 @@ Für jeden Trial werden mindestens erfasst:
 
 Auf Grundlage der gültigen Trials werden pro Test berechnet:
 - **N_valid** = Anzahl gültiger Trials
-- **N_noGo** = Anzahl gültiger No-Go-Trials (sollte 10 entsprechen)
-- **N_go** = Anzahl gültiger Go-Trials (sollte 80 entsprechen)
+- **N_noGo** = Anzahl gültiger No-Go-Trials (typischerweise 7–8, als gemessene Größe)
+- **N_go** = Anzahl gültiger Go-Trials (typischerweise 52–53)
 
 **Fehlerraten:**
 - **Kommissionsfehlerrate (No-Go-Fehler)**:
@@ -109,12 +110,14 @@ Auf Grundlage der gültigen Trials werden pro Test berechnet:
   omissionErrorRate = (Anzahl nicht getätigter Reaktionen auf Go) / N_go
   ```
 
+**Wichtig**: Die Fehlerraten werden als Proportionen berechnet, basierend auf der tatsächlich gemessenen Anzahl gültiger Go- bzw. No-Go-Trials. Da N_noGo zwischen 7 und 8 variieren kann, werden keine festen Absolutwerte vorausgesetzt.
+
 **Reaktionszeiten:**
 - **meanGoRT** = mittlere Reaktionszeit aller korrekten Go-Trials
 - **goRT-SD** = Standardabweichung der RT über korrekte Go-Trials
 
 **Protokollqualität:**
-- **validTrialRatio** = N_valid / 90
+- **validTrialRatio** = N_valid / 60
 
 ---
 
@@ -221,14 +224,14 @@ BrainScore_v1 = 0,40 × AccuracyScore +
 
 | Parameter | Standard-SART (Literatur) | Brainrot-SART Short v1 | Quelle / Begründung |
 |-----------|---------------------------|------------------------|---------------------|
-| **Anzahl Trials** | ~225 Trials, kontinuierlich | 90 Trials (10 Blöcke × 9 Trials) | Reduktion der Belastung und Testdauer für Smartphone; 90 Trials bleiben für Trend- und Vergleichsanalysen ausreichend. |
+| **Anzahl Trials** | ~225 Trials, kontinuierlich | 60 Trials, kontinuierlich (ohne sichtbare Blöcke) | Reduktion der Belastung und Testdauer für Smartphone; 60 Trials bleiben für Trend- und Vergleichsanalysen ausreichend. |
 | **Stimulusset** | Ziffern 1–9, No-Go meist = 3 | Ziffern 1–9, No-Go fix = 3 | Alignment mit gängigen SART-Protokollen (No-Go = 3). |
-| **No-Go-Häufigkeit** | Selten, typ. ~11–12 % der Trials | 10 No-Go-Trials von 90 = 11,1 % | Angleichung an typische SART-No-Go-Rate, um vergleichbare Inhibitionsanforderungen zu gewährleisten. |
+| **No-Go-Häufigkeit** | Selten, typ. ~11–12 % der Trials | 7–8 No-Go-Trials von 60 (≈ 11–13 %) | Angleichung an typische SART-No-Go-Rate, um vergleichbare Inhibitionsanforderungen zu gewährleisten. Variable Anzahl erhöht Natürlichkeit der Sequenz. |
 | **Stimulusdauer** | 250 ms | 500 ms (Produktentscheidung) | 250 ms in der Literatur, für Consumer-Use jedoch als subjektiv „zu kurz" wahrgenommen; 500 ms als Kompromiss zwischen Validität und Nutzbarkeit. |
 | **Maskendauer** | 900 ms | 900 ms | Übernahme der klassischen Maskendauer, um die Trialstruktur maximal beizubehalten. |
 | **Gesamttrialdauer** | 1150 ms (250 + 900 ms) | 1400 ms (500 + 900 ms) | Leicht verlängert; im Dokument explizit als methodische Abweichung benannt. |
 | **Antwortanforderung** | Go auf alle Ziffern außer No-Go-Digit | identisch | Funktionale Gleichheit mit Standard-SART. |
-| **Blockstruktur** | Häufig kontinuierlich oder längere Serien ohne kurze Blöcke | 10 Blöcke à 9 Trials | Blockstruktur verbessert App-UX und ermöglicht zukünftige blockbasierte Analysen (z. B. Ermüdungstrends). |
+| **Blockstruktur** | Häufig kontinuierlich oder längere Serien ohne kurze Blöcke | Kontinuierliche Sequenz ohne sichtbare Blöcke; optionale interne Segmentierung (6×10) nur für Analysen | Kontinuierliche Struktur nähert sich klassischem SART an und vermeidet künstliche Unterbrechungen. Interne Segmentierung ermöglicht optionale Trend-Analysen (z. B. Ermüdung). |
 
 ---
 

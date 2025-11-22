@@ -219,7 +219,7 @@ export interface TrialResult {
 export function computeRawMetrics(trials: TrialResult[]): RawMetrics {
 	const validTrials = trials.filter((t) => t.isValid);
 	const nValid = validTrials.length;
-	const validTrialRatio = nValid / BRAINROT_SART_CONFIG.TOTAL_TRIALS;
+	const validTrialRatio = nValid / BRAINROT_SART_CONFIG.TOTAL_TRIALS; // 60 trials
 
 	// Separate Go and No-Go trials
 	const validGoTrials = validTrials.filter((t) => !t.isNoGo);

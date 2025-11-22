@@ -20,7 +20,7 @@
   let { onComplete }: Props = $props();
   
   const CONFIG: SartConfig = {
-    totalTrials: 90, // ✅ Updated to Brainrot-SART Short v1 spec (10 blocks × 9 trials)
+    totalTrials: 60, // ✅ Updated to Brainrot-SART Short v1 spec (continuous sequence, 7-8 No-Go)
     trialDurationMs: 500,
     maskDurationMs: 900,
     noGoDigit: 3

@@ -1,24 +1,25 @@
 /**
  * Brainrot-SART Short v1 - Trial Generation Engine
  * 
- * Handles trial sequence generation according to the block structure defined in
+ * Handles trial sequence generation according to the continuous structure defined in
  * docs/brainrot-sart-short-v1_brainscore-v1.md
  * 
- * Block Structure:
- * - 10 blocks of 9 trials each
- * - Each block contains all digits 1-9 exactly once (randomized order)
- * - Exactly 1 No-Go trial per block (digit = 3)
- * - No-Go digit must NOT appear at positions 0 or 8 within the block
+ * Sequence Structure:
+ * - 60 trials in continuous sequence (no visible blocks)
+ * - 7-8 No-Go trials (digit = 3), pseudorandomly distributed
+ * - No consecutive No-Go trials (no "3,3" pairs)
+ * - No No-Go in first 2 or last 2 trials (positions 0, 1, 58, 59)
+ * - Go trials filled with digits 1, 2, 4-9 pseudorandomly
+ * - Optional internal segmentation (6 segments × 10 trials) for analysis
  * 
- * @see docs/brainrot-sart-short-v1_brainscore-v1.md
+ * @see docs/brainrot-sart-short-v1_brainscore-v1.md Section 3.2
  */
 
 import { BRAINROT_SART_CONFIG, type StimulusDigit } from './brainrotSartConfig';
 
 export interface BrainrotSartTrial {
-	trialIndex: number; // 0-89
-	blockIndex: number; // 0-9
-	positionInBlock: number; // 0-8
+	trialIndex: number; // 0-59
+	segmentIndex?: number; // 0-5 (optional, for internal analysis)
 	stimulusDigit: StimulusDigit;
 	isNoGo: boolean;
 }
@@ -36,52 +37,101 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 /**
- * Generates a single block of 9 trials with the following constraints:
- * - Contains all digits 1-9 exactly once
- * - No-Go digit (3) is NOT at positions 0 or 8
+ * Generates No-Go positions with constraints:
+ * - Random count between NO_GO_COUNT_MIN and NO_GO_COUNT_MAX (7-8)
+ * - No consecutive No-Go trials
+ * - Not in positions 0, 1, 58, 59
  * 
- * @param blockIndex The index of the block (0-9)
- * @returns Array of 9 trials
+ * @returns Array of trial indices that should be No-Go
  */
-function generateBlock(blockIndex: number): BrainrotSartTrial[] {
-	const { STIMULUS_DIGITS, NO_GO_DIGIT, NO_GO_FORBIDDEN_POSITIONS, TRIALS_PER_BLOCK } =
-		BRAINROT_SART_CONFIG;
+function generateNoGoPositions(): number[] {
+	const {
+		TOTAL_TRIALS,
+		NO_GO_COUNT_MIN,
+		NO_GO_COUNT_MAX,
+		NO_GO_FORBIDDEN_EDGE_POSITIONS
+	} = BRAINROT_SART_CONFIG;
 
-	let validSequence = false;
-	let sequence: StimulusDigit[] = [];
+	// Randomly choose 7 or 8 No-Go trials
+	const noGoCount = NO_GO_COUNT_MIN + Math.floor(Math.random() * (NO_GO_COUNT_MAX - NO_GO_COUNT_MIN + 1));
 
-	// Keep shuffling until No-Go digit is not at forbidden positions
-	while (!validSequence) {
-		sequence = shuffleArray([...STIMULUS_DIGITS]);
-		const noGoPosition = sequence.indexOf(NO_GO_DIGIT as StimulusDigit);
-		validSequence = !NO_GO_FORBIDDEN_POSITIONS.includes(noGoPosition);
+	// Available positions (excluding edges)
+	const availablePositions: number[] = [];
+	for (let i = 0; i < TOTAL_TRIALS; i++) {
+		if (!NO_GO_FORBIDDEN_EDGE_POSITIONS.includes(i)) {
+			availablePositions.push(i);
+		}
 	}
 
-	// Convert to trial objects
-	return sequence.map((digit, positionInBlock) => ({
-		trialIndex: blockIndex * TRIALS_PER_BLOCK + positionInBlock,
-		blockIndex,
-		positionInBlock,
-		stimulusDigit: digit,
-		isNoGo: digit === NO_GO_DIGIT
-	}));
+	// Try to place No-Go positions with constraints (max 100 attempts)
+	for (let attempt = 0; attempt < 100; attempt++) {
+		const positions = shuffleArray(availablePositions).slice(0, noGoCount).sort((a, b) => a - b);
+
+		// Check constraint: no consecutive positions
+		let hasConsecutive = false;
+		for (let i = 1; i < positions.length; i++) {
+			if (positions[i] === positions[i - 1] + 1) {
+				hasConsecutive = true;
+				break;
+			}
+		}
+
+		if (!hasConsecutive) {
+			return positions;
+		}
+	}
+
+	// Fallback: force valid placement if random attempts fail
+	const positions: number[] = [];
+	let lastPos = -2; // Start at -2 so position 0 would be valid (but it's forbidden anyway)
+	
+	while (positions.length < noGoCount) {
+		const candidate = lastPos + 2 + Math.floor(Math.random() * 3); // Skip at least 1 position
+		if (candidate < TOTAL_TRIALS && !NO_GO_FORBIDDEN_EDGE_POSITIONS.includes(candidate)) {
+			positions.push(candidate);
+			lastPos = candidate;
+		}
+	}
+
+	return positions.sort((a, b) => a - b);
 }
 
 /**
  * Generates the complete trial sequence for Brainrot-SART Short v1
  * 
- * @returns Array of 90 trials (10 blocks × 9 trials)
+ * Sequence Structure:
+ * - 60 trials continuous
+ * - 7-8 No-Go trials (digit 3) pseudorandomly placed
+ * - No consecutive No-Go trials
+ * - No No-Go in first/last 2 trials
+ * - Go trials filled with random digits 1,2,4-9
+ * 
+ * @returns Array of 60 trials
  */
 export function generateBrainrotSartTrials(): BrainrotSartTrial[] {
-	const { TOTAL_BLOCKS } = BRAINROT_SART_CONFIG;
-	const allTrials: BrainrotSartTrial[] = [];
+	const { TOTAL_TRIALS, GO_DIGITS, NO_GO_DIGIT, TRIALS_PER_SEGMENT } = BRAINROT_SART_CONFIG;
 
-	for (let blockIndex = 0; blockIndex < TOTAL_BLOCKS; blockIndex++) {
-		const blockTrials = generateBlock(blockIndex);
-		allTrials.push(...blockTrials);
+	// Generate No-Go positions
+	const noGoPositions = new Set(generateNoGoPositions());
+
+	// Generate trial sequence
+	const trials: BrainrotSartTrial[] = [];
+
+	for (let trialIndex = 0; trialIndex < TOTAL_TRIALS; trialIndex++) {
+		const isNoGo = noGoPositions.has(trialIndex);
+		const stimulusDigit = isNoGo
+			? (NO_GO_DIGIT as StimulusDigit)
+			: (GO_DIGITS[Math.floor(Math.random() * GO_DIGITS.length)] as StimulusDigit);
+
+		trials.push({
+			trialIndex,
+			segmentIndex: Math.floor(trialIndex / TRIALS_PER_SEGMENT), // 0-5 for analysis
+			stimulusDigit,
+			isNoGo
+		});
 	}
 
-	return allTrials;
+	return trials;
 }
 
 /**
@@ -96,58 +146,56 @@ export function validateTrialSequence(trials: BrainrotSartTrial[]): {
 	errors: string[];
 } {
 	const errors: string[] = [];
-	const { TOTAL_TRIALS, TOTAL_BLOCKS, TRIALS_PER_BLOCK, NO_GO_DIGIT, NO_GO_FORBIDDEN_POSITIONS } =
-		BRAINROT_SART_CONFIG;
+	const {
+		TOTAL_TRIALS,
+		NO_GO_DIGIT,
+		NO_GO_COUNT_MIN,
+		NO_GO_COUNT_MAX,
+		NO_GO_FORBIDDEN_EDGE_POSITIONS
+	} = BRAINROT_SART_CONFIG;
 
 	// Check total trial count
 	if (trials.length !== TOTAL_TRIALS) {
 		errors.push(`Expected ${TOTAL_TRIALS} trials, got ${trials.length}`);
 	}
 
-	// Check each block
-	for (let blockIndex = 0; blockIndex < TOTAL_BLOCKS; blockIndex++) {
-		const blockTrials = trials.slice(
-			blockIndex * TRIALS_PER_BLOCK,
-			(blockIndex + 1) * TRIALS_PER_BLOCK
+	// Count No-Go trials
+	const noGoTrials = trials.filter((t) => t.isNoGo);
+	const noGoCount = noGoTrials.length;
+	
+	if (noGoCount < NO_GO_COUNT_MIN || noGoCount > NO_GO_COUNT_MAX) {
+		errors.push(
+			`Expected ${NO_GO_COUNT_MIN}-${NO_GO_COUNT_MAX} No-Go trials, got ${noGoCount}`
 		);
-
-		// Check block size
-		if (blockTrials.length !== TRIALS_PER_BLOCK) {
-			errors.push(`Block ${blockIndex}: Expected ${TRIALS_PER_BLOCK} trials, got ${blockTrials.length}`);
-			continue;
-		}
-
-		// Check all digits 1-9 appear exactly once
-		const digits = blockTrials.map((t) => t.stimulusDigit);
-		const uniqueDigits = new Set(digits);
-		if (uniqueDigits.size !== TRIALS_PER_BLOCK) {
-			errors.push(`Block ${blockIndex}: Digits are not unique`);
-		}
-
-		// Check exactly one No-Go per block
-		const noGoTrials = blockTrials.filter((t) => t.isNoGo);
-		if (noGoTrials.length !== 1) {
-			errors.push(`Block ${blockIndex}: Expected 1 No-Go trial, got ${noGoTrials.length}`);
-		} else {
-			// Check No-Go is not at forbidden positions
-			const noGoPosition = blockTrials.findIndex((t) => t.isNoGo);
-			if (NO_GO_FORBIDDEN_POSITIONS.includes(noGoPosition)) {
-				errors.push(
-					`Block ${blockIndex}: No-Go at forbidden position ${noGoPosition} (must not be at ${NO_GO_FORBIDDEN_POSITIONS.join(' or ')})`
-				);
-			}
-		}
-
-		// Check isNoGo flag matches digit
-		blockTrials.forEach((trial, idx) => {
-			const expectedNoGo = trial.stimulusDigit === NO_GO_DIGIT;
-			if (trial.isNoGo !== expectedNoGo) {
-				errors.push(
-					`Block ${blockIndex}, position ${idx}: isNoGo flag (${trial.isNoGo}) does not match digit ${trial.stimulusDigit}`
-				);
-			}
-		});
 	}
+
+	// Check No-Go trials are not at forbidden edge positions
+	noGoTrials.forEach((trial) => {
+		if (NO_GO_FORBIDDEN_EDGE_POSITIONS.includes(trial.trialIndex)) {
+			errors.push(
+				`No-Go trial at forbidden position ${trial.trialIndex} (forbidden: ${NO_GO_FORBIDDEN_EDGE_POSITIONS.join(', ')})`
+			);
+		}
+	});
+
+	// Check no consecutive No-Go trials
+	for (let i = 1; i < trials.length; i++) {
+		if (trials[i].isNoGo && trials[i - 1].isNoGo) {
+			errors.push(
+				`Consecutive No-Go trials at positions ${i - 1} and ${i} (not allowed)`
+			);
+		}
+	}
+
+	// Check isNoGo flag matches digit
+	trials.forEach((trial) => {
+		const expectedNoGo = trial.stimulusDigit === NO_GO_DIGIT;
+		if (trial.isNoGo !== expectedNoGo) {
+			errors.push(
+				`Trial ${trial.trialIndex}: isNoGo flag (${trial.isNoGo}) does not match digit ${trial.stimulusDigit}`
+			);
+		}
+	});
 
 	return {
 		valid: errors.length === 0,
