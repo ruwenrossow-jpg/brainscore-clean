@@ -1,106 +1,76 @@
 /**
- * SART Service
- * Alle Business-Logic für den SART-Test
+ * SART Service - Database Layer
+ * Handles database interactions for Brainrot-SART Short v1 test results
  * 
- * WARUM ein Service? 
- * - Trennung von UI und Logik
- * - Testbar ohne Komponenten
- * - Wiederverwendbar
+ * Test logic and score calculation now lives in:
+ * - src/features/brainrotTest/brainrotSartEngine.ts (trial generation)
+ * - src/features/brainrotTest/brainScoreV1.ts (score calculation)
+ * 
+ * @see docs/brainrot-sart-short-v1_brainscore-v1.md
  */
 
 import { supabase } from './supabase.client';
-import type { SartMetrics, SartTrial, SartConfig } from '$lib/types/sart.types';
+import type { SartMetrics, SartTrial } from '$lib/types/sart.types';
+import type { BrainrotSartTrial } from '$features/brainrotTest/brainrotSartEngine';
+import { 
+  generateBrainrotSartTrials 
+} from '$features/brainrotTest/brainrotSartEngine';
+import { 
+  computeRawMetrics, 
+  calculateBrainScore,
+  type TrialResult,
+  type BrainScoreResult 
+} from '$features/brainrotTest/brainScoreV1';
 
 export class SartService {
-  private static readonly DEFAULT_CONFIG: SartConfig = {
-    totalTrials: 45,
-    trialDurationMs: 1000,
-    noGoDigit: 3,
-  };
-
   /**
-   * Generiert zufällige Trials für den Test
+   * Generates trials according to Brainrot-SART Short v1 specification
+   * 90 trials (10 blocks × 9 trials), each block contains digits 1-9 once
+   * 
+   * @see docs/brainrot-sart-short-v1_brainscore-v1.md Section 3.2
    */
-  static generateTrials(config: SartConfig = this.DEFAULT_CONFIG): SartTrial[] {
-    const trials: SartTrial[] = [];
-
-    for (let i = 0; i < config.totalTrials; i++) {
-      const digit = Math.floor(Math.random() * 9) + 1;
-      trials.push({
-        index: i,
-        digit,
-        isNoGo: digit === config.noGoDigit,
-        responded: false,
-        reactionTimeMs: null,
-      });
-    }
-
-    return trials;
+  static generateTrials(): SartTrial[] {
+    const brainrotTrials = generateBrainrotSartTrials();
+    
+    // Convert to legacy SartTrial format for UI compatibility
+    return brainrotTrials.map((trial) => ({
+      index: trial.trialIndex,
+      digit: trial.stimulusDigit,
+      isNoGo: trial.isNoGo,
+      responded: false,
+      reactionTimeMs: null,
+    }));
   }
 
   /**
-   * Berechnet Metriken aus abgeschlossenen Trials
+   * Computes BrainScore v1 metrics from completed trials
+   * Uses the new scoring formula: 40% Accuracy + 30% Speed + 20% Consistency + 10% Discipline
+   * 
+   * @see docs/brainrot-sart-short-v1_brainscore-v1.md Section 6
    */
   static computeMetrics(trials: SartTrial[]): SartMetrics {
-    const goTrials = trials.filter((t) => !t.isNoGo);
-    const noGoTrials = trials.filter((t) => t.isNoGo);
+    // Convert legacy SartTrial format to TrialResult format
+    const trialResults: TrialResult[] = trials.map((trial) => ({
+      isValid: true, // For now, all trials are valid (no app backgrounding detection yet)
+      isNoGo: trial.isNoGo,
+      userResponded: trial.responded,
+      isCorrect: trial.isNoGo ? !trial.responded : trial.responded,
+      reactionTimeMs: trial.reactionTimeMs,
+    }));
 
-    // Commission Errors: Bei NoGo reagiert (FALSCH)
-    const commissionErrors = noGoTrials.filter((t) => t.responded).length;
+    // Compute raw metrics and BrainScore v1
+    const rawMetrics = computeRawMetrics(trialResults);
+    const brainScoreResult = calculateBrainScore(rawMetrics);
 
-    // Omission Errors: Bei Go NICHT reagiert (FALSCH)
-    const omissionErrors = goTrials.filter((t) => !t.responded).length;
-
-    // Reaktionszeiten (nur Go-Trials mit Response)
-    const reactionTimes = goTrials
-      .filter((t) => t.responded && t.reactionTimeMs !== null)
-      .map((t) => t.reactionTimeMs!);
-
-    const meanReactionTimeMs = reactionTimes.length
-      ? reactionTimes.reduce((sum, rt) => sum + rt, 0) / reactionTimes.length
-      : 0;
-
-    // Standard-Abweichung
-    const sdReactionTimeMs = reactionTimes.length > 1
-      ? Math.sqrt(
-          reactionTimes
-            .map((rt) => Math.pow(rt - meanReactionTimeMs, 2))
-            .reduce((sum, val) => sum + val, 0) / (reactionTimes.length - 1)
-        )
-      : 0;
-
-    // Score-Berechnung (0-100)
-    const ceRate = noGoTrials.length ? commissionErrors / noGoTrials.length : 0;
-    const oeRate = goTrials.length ? omissionErrors / goTrials.length : 0;
-
-    const inhibitionComponent = 100 * (1 - ceRate);
-    const vigilanceComponent = 100 * (1 - oeRate);
-
-    // Speed-Score: Schneller = besser (optimal ~500ms)
-    const speedScore = meanReactionTimeMs
-      ? Math.max(0, Math.min(100, (700 - meanReactionTimeMs) / 4))
-      : 50;
-
-    // Stability-Score: Konsistente RT = besser
-    const stabilityScore = sdReactionTimeMs
-      ? Math.max(0, Math.min(100, 100 - sdReactionTimeMs / 3))
-      : 50;
-
-    const score = Math.round(
-      0.35 * inhibitionComponent +
-        0.25 * vigilanceComponent +
-        0.25 * speedScore +
-        0.15 * stabilityScore
-    );
-
+    // Return in legacy format for backward compatibility
     return {
-      commissionErrors,
-      omissionErrors,
-      goTrialsCount: goTrials.length,
-      noGoTrialsCount: noGoTrials.length,
-      meanReactionTimeMs: Math.round(meanReactionTimeMs),
-      sdReactionTimeMs: Math.round(sdReactionTimeMs),
-      score,
+      commissionErrors: Math.round(rawMetrics.commissionErrorRate * rawMetrics.nNoGo),
+      omissionErrors: Math.round(rawMetrics.omissionErrorRate * rawMetrics.nGo),
+      goTrialsCount: rawMetrics.nGo,
+      noGoTrialsCount: rawMetrics.nNoGo,
+      meanReactionTimeMs: Math.round(rawMetrics.meanGoRT),
+      sdReactionTimeMs: Math.round(rawMetrics.goRtSD),
+      score: Math.round(brainScoreResult.brainScore),
     };
   }
 

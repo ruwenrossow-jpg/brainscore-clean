@@ -20,7 +20,7 @@
   let { onComplete }: Props = $props();
   
   const CONFIG: SartConfig = {
-    totalTrials: 45,
+    totalTrials: 90, // ✅ Updated to Brainrot-SART Short v1 spec (10 blocks × 9 trials)
     trialDurationMs: 500,
     maskDurationMs: 900,
     noGoDigit: 3
@@ -61,8 +61,8 @@
   });
   
   function startTest() {
-    // Initialisiere Test
-    trials = SartService.generateTrials(CONFIG);
+    // Initialisiere Test - Uses new Brainrot-SART Short v1 trial generation
+    trials = SartService.generateTrials();
     currentIndex = 0;
     testState = 'running';
     nextTrial();

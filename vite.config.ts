@@ -1,8 +1,14 @@
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 import { SvelteKitPWA } from '@vite-pwa/sveltekit';
+import path from 'path';
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      $features: path.resolve('./src/features')
+    }
+  },
   plugins: [
     sveltekit(),
     SvelteKitPWA({
