@@ -3,6 +3,7 @@
    * Auth Debug Page
    * Zum Testen der Supabase-Verbindung
    */
+  import { goto } from '$app/navigation';
   import { supabase } from '$lib/services/supabase.client';
   import { onMount } from 'svelte';
   
@@ -189,6 +190,6 @@
   </div>
   
   <div class="mt-6 text-center">
-    <a href="/" class="btn btn-ghost" data-sveltekit-preload-data="hover">← Zurück zur Startseite</a>
+    <button onclick={() => goto('/')} class="btn btn-ghost">← Zurück zur Startseite</button>
   </div>
 </div>

@@ -3,6 +3,7 @@
    * Auth Page
    * Kombinierte Login/Register Seite mit Tabs
    */
+  import { goto } from '$app/navigation';
   import AuthCard from '$lib/components/auth/AuthCard.svelte';
   import LoginForm from '$lib/components/auth/LoginForm.svelte';
   import RegisterForm from '$lib/components/auth/RegisterForm.svelte';
@@ -21,9 +22,9 @@
     
     <!-- Header -->
     <div class="text-center mb-8">
-      <a href="/" class="inline-block">
+      <button onclick={() => goto('/')} class="inline-block cursor-pointer">
         <h1 class="text-4xl font-bold text-black mb-2">BrainrotAI</h1>
-      </a>
+      </button>
       <p class="text-gray-600">Cognitive Performance Testing</p>
     </div>
 
@@ -60,9 +61,9 @@
 
     <!-- Back to Home -->
     <div class="text-center mt-6">
-      <a href="/" class="text-sm text-gray-600 hover:text-black" data-sveltekit-preload-data="hover">
+      <button onclick={() => goto('/')} class="text-sm text-gray-600 hover:text-black">
         ← Zurück zur Startseite
-      </a>
+      </button>
     </div>
 
   </div>

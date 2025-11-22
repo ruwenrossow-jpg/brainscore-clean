@@ -1,6 +1,7 @@
 <!-- BrainScore Landing Page -->
 
 <script lang="ts">
+  import { goto } from '$app/navigation';
   import { isAuthenticated } from '$lib/stores/auth.store';
 </script>
 
@@ -9,9 +10,9 @@
   <!-- Top Navigation (wenn nicht eingeloggt) -->
   {#if !$isAuthenticated}
     <div class="absolute top-4 right-4">
-      <a href="/auth" class="btn btn-ghost btn-sm text-black" data-sveltekit-preload-data="hover">
+      <button onclick={() => goto('/auth')} class="btn btn-ghost btn-sm text-black">
         Login / Registrieren
-      </a>
+      </button>
     </div>
   {/if}
   
@@ -43,16 +44,16 @@
 
       <div class="card-actions flex-col justify-center pt-4 space-y-3">
         {#if $isAuthenticated}
-          <a href="/dashboard" class="btn btn-primary btn-lg w-full text-white hover:opacity-90 transition-opacity" data-sveltekit-preload-data="hover">
+          <button onclick={() => goto('/dashboard')} class="btn btn-primary btn-lg w-full text-white hover:opacity-90 transition-opacity">
             Zum Dashboard
-          </a>
+          </button>
         {:else}
-          <a href="/auth" class="btn btn-primary btn-lg w-full text-white hover:opacity-90 transition-opacity" data-sveltekit-preload-data="hover">
+          <button onclick={() => goto('/auth')} class="btn btn-primary btn-lg w-full text-white hover:opacity-90 transition-opacity">
             Jetzt starten
-          </a>
-          <a href="/test" class="btn btn-ghost btn-lg w-full text-black border border-gray-300" data-sveltekit-preload-data="hover">
+          </button>
+          <button onclick={() => goto('/test')} class="btn btn-ghost btn-lg w-full text-black border border-gray-300">
             Ohne Anmeldung testen
-          </a>
+          </button>
         {/if}
       </div>
 

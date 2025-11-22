@@ -82,17 +82,16 @@
         
         <!-- CTA Button -->
         <div class="text-center">
-          <a 
-            href="/test" 
+          <button 
+            onclick={() => goto('/test')}
             class="btn btn-primary btn-lg text-white"
-            data-sveltekit-preload-data="hover"
           >
             {#if stats && stats.totalTests === 0}
               🎯 Ersten Test starten
             {:else}
               🔄 Neuen Test starten
             {/if}
-          </a>
+          </button>
         </div>
         
         <!-- Stats -->
