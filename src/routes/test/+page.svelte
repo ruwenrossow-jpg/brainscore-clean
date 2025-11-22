@@ -24,7 +24,7 @@
   }
 </script>
 
-<div class="min-h-screen bg-white flex items-center justify-center px-4 py-12">
+<div class="min-h-screen bg-white flex items-center justify-center px-4 pwa-safe-screen">
   
   {#if step === 'instructions'}
     <SartInstructions onStart={() => (step = 'test')} />

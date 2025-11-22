@@ -50,7 +50,7 @@
   <title>Dashboard | BrainrotAI</title>
 </svelte:head>
 
-<div class="min-h-screen bg-white">
+<div class="min-h-screen bg-white pwa-safe-screen">
   
   {#if $auth.loading || loading}
     <div class="flex items-center justify-center min-h-screen">

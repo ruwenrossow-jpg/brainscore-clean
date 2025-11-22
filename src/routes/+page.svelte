@@ -4,7 +4,7 @@
   import { isAuthenticated } from '$lib/stores/auth.store';
 </script>
 
-<div class="min-h-screen bg-white flex flex-col items-center justify-center px-4 py-12">
+<div class="min-h-screen bg-white flex flex-col items-center justify-center px-4 pwa-safe-screen">
   
   <!-- Top Navigation (wenn nicht eingeloggt) -->
   {#if !$isAuthenticated}
@@ -29,33 +29,17 @@
   <div class="card bg-base-200 shadow-lg w-full max-w-md border border-gray-200">
     <div class="card-body space-y-6">
       
-      <h2 class="card-title text-2xl font-semibold text-black justify-center">
-        Teste deine Konzentration
-      </h2>
-
-      <div class="space-y-4 text-center">
-        <p class="text-base text-gray-700 leading-relaxed">
-          Messe deine <strong>Aufmerksamkeit</strong> und <strong>Reaktionsgeschwindigkeit</strong> 
-          mit einem wissenschaftlich validierten Test.
-        </p>
-        
-        <div class="divider my-2"></div>
-
-        <ul class="text-sm text-gray-600 space-y-2 text-left">
-          <li class="flex items-start">
-            <span class="mr-2">✓</span>
-            <span>5 Minuten SART-Konzentrationstest</span>
-          </li>
-          <li class="flex items-start">
-            <span class="mr-2">✓</span>
-            <span>Personalisierter Score & Metriken</span>
-          </li>
-          <li class="flex items-start">
-            <span class="mr-2">✓</span>
-            <span>Screentime-Analyse (optional)</span>
-          </li>
-        </ul>
-      </div>
+      {#if $isAuthenticated}
+        <!-- Eingeloggt: Fokus auf Kontrolle -->
+        <h2 class="text-2xl md:text-3xl font-bold text-black text-center leading-tight">
+          Gewinne die Kontrolle über deine Aufmerksamkeit zurück.
+        </h2>
+      {:else}
+        <!-- Nicht eingeloggt: Fokus auf Klarheit -->
+        <h2 class="text-2xl md:text-3xl font-bold text-black text-center leading-tight">
+          Verstehe endlich, was deine Aufmerksamkeit wirklich steuert.
+        </h2>
+      {/if}
 
       <div class="card-actions flex-col justify-center pt-4 space-y-3">
         {#if $isAuthenticated}

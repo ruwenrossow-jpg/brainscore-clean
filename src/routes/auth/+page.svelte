@@ -15,7 +15,7 @@
   <title>Login - BrainrotAI</title>
 </svelte:head>
 
-<div class="min-h-screen bg-white flex items-center justify-center px-4 py-12">
+<div class="min-h-screen bg-white flex items-center justify-center px-4 pwa-safe-screen">
   
   <div class="w-full max-w-md">
     
