@@ -15,6 +15,14 @@ import { type Handle } from '@sveltejs/kit';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_KEY;
 
+// CRITICAL: Check if environment variables are set
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('❌ CRITICAL: Supabase environment variables missing!');
+  console.error('   VITE_SUPABASE_URL:', supabaseUrl ? '✅ Set' : '❌ Missing');
+  console.error('   VITE_SUPABASE_KEY:', supabaseAnonKey ? '✅ Set' : '❌ Missing');
+  console.error('   → Set these in Vercel Dashboard → Settings → Environment Variables');
+}
+
 // Performance Monitoring
 let requestCount = 0;
 
