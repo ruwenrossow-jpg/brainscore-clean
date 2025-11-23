@@ -38,7 +38,7 @@
 
     <div class="text-center">
       <p class="text-sm text-gray-600">
-        ⏱️ Dauer: <strong>ca. 45 Sekunden</strong>
+        ⏱️ Dauer: <strong>ca. 1,5 Minuten</strong>
       </p>
     </div>
 
