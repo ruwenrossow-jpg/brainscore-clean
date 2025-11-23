@@ -3,7 +3,16 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { isAuthenticated } from '$lib/stores/auth.store';
+  import type { PageData } from './$types';
+  
+  // Server-Side Rendering: Diese Seite wird nur angezeigt wenn Server-Guard
+  // KEINEN Redirect macht (= User ist nicht eingeloggt)
+  let { data }: { data: PageData } = $props();
 </script>
+
+<svelte:head>
+  <title>BrainrotAI - Cognitive Performance Testing</title>
+</svelte:head>
 
 <div class="min-h-screen bg-white flex flex-col items-center justify-center px-4 pwa-safe-screen">
   
