@@ -114,9 +114,9 @@
             {/if}
           {/each}
         </select>
-        <label class="label">
-          <span class="label-text-alt text-gray-500">In 30-Minuten-Schritten wählbar</span>
-        </label>
+        <div class="pt-1">
+          <span class="text-xs text-gray-500">In 30-Minuten-Schritten wählbar</span>
+        </div>
       </div>
 
       <div class="form-control w-full">
@@ -134,9 +134,9 @@
           class="input input-bordered w-full text-lg bg-white border-gray-300 focus:border-black" 
           bind:value={activations} 
         />
-        <label class="label">
-          <span class="label-text-alt text-gray-500">Max. 500 (≈ alle 3 Min über 24h)</span>
-        </label>
+        <div class="pt-1">
+          <span class="text-xs text-gray-500">Max. 500 (≈ alle 3 Min über 24h)</span>
+        </div>
       </div>
     </div>
 

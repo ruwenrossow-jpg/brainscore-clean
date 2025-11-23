@@ -116,6 +116,7 @@
       variant="primary" 
       size="lg" 
       fullWidth={false}
+      type="submit"
     >
       <span class="flex-1">Profil erstellen</span>
     </BaseButton>
