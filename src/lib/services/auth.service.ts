@@ -15,6 +15,8 @@ export class AuthService {
   /**
    * Registrierung: Neuer User mit E-Mail + Passwort
    * Supabase sendet automatisch Bestätigungs-E-Mail
+   * 
+   * WICHTIG: Erstellt automatisch ein leeres Profil mit onboarding_completed: false
    */
   static async signUp(credentials: RegisterCredentials) {
     try {
@@ -29,6 +31,29 @@ export class AuthService {
       });
 
       if (error) throw error;
+      
+      // Erstelle leeres Profil für neuen User
+      // onboarding_completed: false → User muss Onboarding durchlaufen
+      if (data.user) {
+        console.log('✅ User erstellt, erstelle initiales Profil...');
+        
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: data.user.id,
+            name: credentials.name || 'Neuer Nutzer',
+            onboarding_completed: false,
+            data_consent: false
+          } as any);
+        
+        if (profileError) {
+          console.error('⚠️ Profil-Erstellung fehlgeschlagen:', profileError);
+          // Nicht kritisch - User kann trotzdem fortfahren
+        } else {
+          console.log('✅ Initiales Profil erstellt');
+        }
+      }
+      
       return { data, error: null };
     } catch (error) {
       console.error('❌ Sign up error:', error);

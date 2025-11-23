@@ -10,7 +10,7 @@
    * - Redirect zu Dashboard nach Completion
    */
   import { onMount } from 'svelte';
-  import { goto } from '$app/navigation';
+  import { goto, invalidateAll } from '$app/navigation';
   import { auth, currentUser } from '$lib/stores/auth.store';
   import { ProfileService } from '$lib/services/profile.service';
   import BaseCard from '$lib/components/base/BaseCard.svelte';
@@ -40,12 +40,18 @@
     );
     
     if (success) {
-      // Weiterleitung zum Dashboard
-      // Profile wird automatisch neu geladen bei nächster Navigation
-      setTimeout(() => {
-        goto('/dashboard');
-      }, 500);
+      console.log('✅ Profil gespeichert, invalidiere Server-Cache...');
+      
+      // WICHTIG: Invalidate alle Server-Load Functions
+      // Dadurch wird +layout.server.ts neu ausgeführt und lädt das aktualisierte Profil
+      await invalidateAll();
+      
+      console.log('✅ Cache invalidiert, redirect zu Dashboard...');
+      
+      // Redirect zu Dashboard (Server lädt jetzt aktualisiertes Profil)
+      goto('/dashboard');
     } else {
+      console.error('❌ Profil-Speicherung fehlgeschlagen:', error);
       errorMessage = 'Fehler beim Speichern. Bitte versuche es erneut.';
       step = 'form';
       isLoading = false;
