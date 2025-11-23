@@ -121,6 +121,143 @@ Auf Grundlage der gültigen Trials werden pro Test berechnet:
 
 ---
 
+## 4. Onboarding & Check-in-Konfiguration (MVP)
+
+### 4.1 Ziel und Dauer
+
+Das Onboarding dient der initialen Konfiguration der App und soll maximal **2–3 Minuten** in Anspruch nehmen. Es verfolgt vier Hauptziele:
+
+1. **(a) Erfassung der Hauptziele des Nutzers** – z. B. Fokusverbesserung, Kontrolle von Impulsivität, Erfassung von Ermüdung, Performance-Awareness oder unsicher/explorativ.
+2. **(b) Definition von 1–3 Check-in-Kontexten** – Situationen, in denen der Nutzer regelmäßig testen möchte (z. B. „vor dem Lernen", „nach Social Media", „abends vor dem Schlafen"), mit zugeordneten Tageszeiten.
+3. **(c) Aktivierung eines Kalender-Reminder-Setups** – Bereitstellung einer .ics-Datei zum Import in den Kalender, um die definierten Check-ins zu erinnern.
+4. **(d) Durchführung eines ersten Brainrot-SART-Tests** – zur Erfassung einer initialen Baseline.
+
+**Wichtig**: Das Onboarding hat **keinen Einfluss** auf die SART-Testlogik oder die BrainScore-Berechnung v1. Es dient ausschließlich der Planung und Interpretation der Tests (Kontexte, Tagesverläufe) sowie der Nutzer-Motivation durch strukturierte Check-ins.
+
+### 4.2 Onboarding-Flow (4 Screens)
+
+#### Screen 1: „Welcome"
+
+- **Inhalt**:
+  - Kurzbeschreibung des Nutzens von BrainrotAI in einem Satz, z. B.:
+    > „BrainrotAI hilft dir, deine Aufmerksamkeit zu verstehen und gezielt zu verbessern – in deinem Alltag, ohne aufwendige Diagnostik."
+  - Call-to-Action (CTA): „Loslegen"
+- **Ziel**: Motivation und schneller Einstieg.
+
+#### Screen 2: „Ziele/Metriken"
+
+- **Inhalt**:
+  - Liste möglicher Ziele mit Mehrfachauswahl (maximal 3):
+    - `focus` – Fokusverbesserung
+    - `impulsivity` – Kontrolle von Impulsivität
+    - `fatigue` – Erfassung von Ermüdung
+    - `performanceAwareness` – Performance-Bewusstsein
+    - `unsure` – Unsicher / explorativ
+- **Technische Umsetzung**:
+  - Enum `UserGoal` mit den Werten: `focus`, `impulsivity`, `fatigue`, `performanceAwareness`, `unsure`.
+  - Nutzer kann 1–3 Ziele auswählen.
+- **Ziel**: Personalisierung und Fokussierung auf relevante Metriken.
+
+#### Screen 3: „Kontexte & Tageszeiten"
+
+- **Inhalt**:
+  - Nutzer wählt bis zu 3 Check-in-Kontexte aus vordefinierten Optionen, z. B.:
+    - „Vor dem Lernen"
+    - „Nach Social Media"
+    - „Abends vor dem Schlafen"
+    - „Nach dem Sport"
+    - „Morgens nach dem Aufwachen"
+    - Benutzerdefinierter Kontext (Freitext, optional)
+  - Jedem Kontext wird eine Tageszeit zugeordnet:
+    - `morning` (Morgen)
+    - `noon` (Mittag)
+    - `evening` (Abend)
+- **Technische Umsetzung**:
+  - **TrackingContext-Struktur**:
+    ```typescript
+    {
+      id: string,          // UUID oder generierte ID
+      label: string,       // z. B. "Vor dem Lernen"
+      slot: 'morning' | 'noon' | 'evening',
+      fixedTime: string    // ISO-Zeit, z. B. "08:00", "13:00", "20:00"
+    }
+    ```
+  - **Mapping slot → fixe Uhrzeit** (produktseitige Vereinfachung für MVP):
+    - `morning` = 08:00 Uhr
+    - `noon` = 13:00 Uhr
+    - `evening` = 20:00 Uhr
+- **Ziel**: Strukturierung der Test-Routine im Alltag; maximal 3 Kontexte zur Reduktion von Komplexität.
+
+#### Screen 4: „Kalender & erster Test"
+
+- **Inhalt**:
+  - Generierung einer `.ics`-Datei basierend auf den definierten Kontexten und Zeitslots.
+  - Download/Export der Datei zur Integration in Kalender-Apps (z. B. Google Calendar, Apple Calendar).
+  - CTA: „Ersten Test starten" – direkter Start des ersten Brainrot-SART-Tests.
+- **Ziel**: 
+  - Aktivierung der Reminder-Funktion.
+  - Erfassung einer initialen Baseline durch den ersten Test.
+
+### 4.3 Datenmodell-Spezifikation
+
+#### UserGoal-Enum
+
+```typescript
+enum UserGoal {
+  focus = 'focus',
+  impulsivity = 'impulsivity',
+  fatigue = 'fatigue',
+  performanceAwareness = 'performanceAwareness',
+  unsure = 'unsure'
+}
+```
+
+- Nutzer kann 1–3 Werte aus dieser Liste auswählen.
+- Diese Auswahl beeinflusst die Interpretation und Darstellung der Ergebnisse (z. B. Hervorhebung relevanter Metriken wie CommissionErrorRate bei `impulsivity`), hat aber **keinen Einfluss** auf die Testdurchführung oder BrainScore-Berechnung.
+
+#### TrackingContext-Struktur
+
+```typescript
+interface TrackingContext {
+  id: string;                      // Eindeutige ID (UUID)
+  label: string;                   // Nutzer-sichtbare Bezeichnung, z. B. "Vor dem Lernen"
+  slot: 'morning' | 'noon' | 'evening';  // Zeitslot
+  fixedTime: string;               // ISO-Zeit-String, z. B. "08:00:00"
+}
+```
+
+#### Slot-zu-Zeit-Mapping (MVP)
+
+Für das MVP wird eine vereinfachte Zuordnung verwendet:
+
+| Slot      | Fixe Uhrzeit |
+|-----------|--------------|
+| `morning` | 08:00 Uhr    |
+| `noon`    | 13:00 Uhr    |
+| `evening` | 20:00 Uhr    |
+
+Diese Zeiten sind **produktseitig festgelegt** und dienen der Vereinfachung. In späteren Versionen können individuelle Zeiten durch den Nutzer konfiguriert werden.
+
+### 4.4 Abgrenzung und Erweiterbarkeit
+
+- **Keine Beeinflussung der Testlogik**:
+  - Das Onboarding hat **keinerlei Einfluss** auf die Durchführung des Brainrot-SART-Tests oder die Berechnung des BrainScore v1.
+  - Es dient ausschließlich der:
+    - Planung von Check-ins (Reminder),
+    - Interpretation der Ergebnisse (Kontextzuordnung),
+    - Visualisierung von Tagesverläufen.
+- **MVP-Beschränkungen**:
+  - Maximal 3 Kontexte.
+  - 3 vordefinierte Zeitslots (morning, noon, evening).
+  - Keine individuellen Zeitanpassungen.
+- **Geplante Erweiterungen** (nicht Teil des MVP):
+  - Individuelle Zeitkonfiguration durch Nutzer.
+  - Mehr als 3 Kontexte.
+  - Dynamische Reminder basierend auf Nutzerverhalten.
+  - Integration mit externen Event-Systemen (z. B. Screentime-Reports, Social-Media-Nutzung).
+
+---
+
 ## 5. Kognitive Konstrukte und Diagnostik
 
 ### 5.1 Response Inhibition / Impulsivität
@@ -156,11 +293,11 @@ Auf Grundlage der gültigen Trials werden pro Test berechnet:
 
 ---
 
-## 6. BrainScore v1 (0–100)
+## 7. BrainScore v1 (0–100)
 
 Der BrainScore v1 ist eine gewichtete Kombination mehrerer Teil-Scores, die jeweils im Bereich 0–100 liegen. Er dient als interpretierebare Gesamtkennzahl für eine Session und soll für Nutzer:innen verständlich bleiben (Skala 0–100).
 
-### 6.1 AccuracyScore (0–100)
+### 7.1 AccuracyScore (0–100)
 
 Basierend auf Kommissions- und Omissionsfehlern:
 
@@ -174,7 +311,7 @@ Basierend auf Kommissions- und Omissionsfehlern:
    AccuracyScore = 100 × accuracy
    ```
 
-### 6.2 SpeedScore (0–100)
+### 7.2 SpeedScore (0–100)
 
 Der SpeedScore bildet den Speed–Accuracy-Trade-off ab, wie er in der SART-Forschung beschrieben ist: sehr schnelle Reaktionen gehen oft mit höheren Fehlerquoten einher.
 
@@ -186,14 +323,14 @@ Definition über meanGoRT:
 
 Die linearen Übergänge werden im Code gemäß einfacher Interpolation implementiert.
 
-### 6.3 ConsistencyScore (0–100)
+### 7.3 ConsistencyScore (0–100)
 
 Der ConsistencyScore basiert auf goRT-SD:
 - Wenn **goRT-SD ≤ 80 ms** → ConsistencyScore = 100 (sehr konsistent)
 - Wenn **80 ms < goRT-SD < 250 ms** → linearer Abfall von 100 → 40
 - Wenn **goRT-SD ≥ 250 ms** → ConsistencyScore = 40 (stark schwankende Leistung)
 
-### 6.4 DisciplineScore (0–100)
+### 7.4 DisciplineScore (0–100)
 
 Der DisciplineScore bewertet primär die Protokollqualität:
 - **Ausgangswert**: 100 Punkte
@@ -204,7 +341,7 @@ Der DisciplineScore bewertet primär die Protokollqualität:
 
 Die genauen Schwellen werden im Code entsprechend fest kodiert und können in späteren Versionen empirisch nachjustiert werden.
 
-### 6.5 Gesamt-Score
+### 7.5 Gesamt-Score
 
 Der BrainScore v1 ist definiert als:
 
@@ -220,7 +357,7 @@ BrainScore_v1 = 0,40 × AccuracyScore +
 
 ---
 
-## 7. Vergleich: Standard-SART vs. Brainrot-SART Short v1
+## 8. Vergleich: Standard-SART vs. Brainrot-SART Short v1
 
 | Parameter | Standard-SART (Literatur) | Brainrot-SART Short v1 | Quelle / Begründung |
 |-----------|---------------------------|------------------------|---------------------|
@@ -235,7 +372,7 @@ BrainScore_v1 = 0,40 × AccuracyScore +
 
 ---
 
-## 8. Geltungsbereich, Limitationen und Nutzung im Prototypen
+## 9. Geltungsbereich, Limitationen und Nutzung im Prototypen
 
 - **Validität**: 
   - Brainrot-SART Short v1 orientiert sich klar am SART, weicht aber in der Stimulusdauer und Gesamtlänge ab.
@@ -250,7 +387,7 @@ BrainScore_v1 = 0,40 × AccuracyScore +
 
 ---
 
-## 9. Literatur (Auszug)
+## 10. Literatur (Auszug)
 
 - Robertson, I. H., Manly, T., Andrade, J., Baddeley, B. T., & Yiend, J. (1997). 'Oops!': Performance correlates of everyday attentional failures in traumatic brain injured and normal subjects on the Sustained Attention to Response Task (SART). *Neuropsychologia, 35*(6), 747–758.
 - Seli, P., et al. (2013). Enhancing SART validity by statistically controlling response speed. *Frontiers in Psychology, 4*, 265.
