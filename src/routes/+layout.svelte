@@ -25,8 +25,13 @@
     const duration = performance.now() - start;
     console.log(`⚡ Auth hydration: ${duration.toFixed(2)}ms`);
     
-    // Auth Listener für Live-Updates (Token Refresh, andere Tabs, etc.)
-    const { data: subscription } = auth.setupAuthListener();
+    // WICHTIG: Auth Listener NACH hydration starten (kleine Verzögerung)
+    // Verhindert Race Condition zwischen hydrate() und INITIAL_SESSION event
+    let subscription: any;
+    setTimeout(() => {
+      subscription = auth.setupAuthListener().data;
+      console.log('👂 Auth listener started');
+    }, 100);
     
     // PWA: Verhindere, dass Links die App verlassen
     const isPWA = window.matchMedia('(display-mode: standalone)').matches ||
@@ -85,7 +90,10 @@
     
     // Cleanup beim Unmount
     return () => {
-      subscription?.subscription.unsubscribe();
+      if (subscription?.subscription) {
+        subscription.subscription.unsubscribe();
+        console.log('🔇 Auth listener stopped');
+      }
     };
   });
 </script>

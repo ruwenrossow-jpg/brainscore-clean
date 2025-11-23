@@ -112,16 +112,32 @@ export const auth = {
   },
 
   /**
-   * Auth State Change Listener (OPTIMIERT)
+   * Auth State Change Listener (OPTIMIERT + DEBOUNCED)
    * - Bei SIGNED_IN: SKIP (signIn() handled es bereits)
    * - Bei SIGNED_OUT: Clear store
    * - Bei TOKEN_REFRESHED: Keep current state
+   * - Debouncing verhindert infinite loops
    * 
    * WICHTIG: KEIN Reload bei SIGNED_IN!
    * Login-Flow: signIn() → Store Update → goto('/dashboard') → Server lädt Profile
    */
   setupAuthListener() {
+    let lastEvent = '';
+    let lastEventTime = 0;
+    const DEBOUNCE_MS = 1000; // Ignoriere duplizierte Events innerhalb 1 Sekunde
+    
     return AuthService.onAuthStateChange((event, session) => {
+      const now = Date.now();
+      const eventKey = `${event}-${session?.user?.id || 'null'}`;
+      
+      // Debounce: Ignoriere identische Events innerhalb DEBOUNCE_MS
+      if (eventKey === lastEvent && (now - lastEventTime) < DEBOUNCE_MS) {
+        // Silent ignore - kein Log spam
+        return;
+      }
+      
+      lastEvent = eventKey;
+      lastEventTime = now;
       console.log(`🔔 [auth.store] Auth event: ${event}`);
       
       if (event === 'SIGNED_IN' && session?.user) {
@@ -138,6 +154,9 @@ export const auth = {
           ...state,
           session
         }));
+      } else if (event === 'INITIAL_SESSION') {
+        // Initial session wird von hydrate() gehandelt, ignorieren
+        console.log('ℹ️ [auth.store] INITIAL_SESSION event ignored (handled by hydrate())');
       }
     });
   }
