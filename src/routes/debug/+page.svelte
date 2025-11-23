@@ -102,6 +102,19 @@
 <div class="container mx-auto px-4 py-12 max-w-2xl">
   <h1 class="text-3xl font-bold mb-8">🔍 Auth Debug Tool</h1>
   
+  <!-- Quick Links to other debug tools -->
+  <div class="alert alert-info mb-6">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current shrink-0 w-6 h-6">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+    </svg>
+    <div>
+      <h3 class="font-bold">Weitere Debug-Tools:</h3>
+      <div class="text-sm">
+        <a href="/debug/fix-profile" class="link">🩹 Profile Onboarding Fix</a>
+      </div>
+    </div>
+  </div>
+  
   <!-- Connection Status -->
   <div class="card bg-base-200 shadow-lg mb-6">
     <div class="card-body">

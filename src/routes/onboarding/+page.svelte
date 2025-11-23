@@ -111,14 +111,27 @@
         </div>
       </div>
 
-      <!-- Skip Option (optional) -->
+      <!-- Skip Option -->
       {#if step !== 'saving'}
         <div class="text-center mt-6">
           <button 
-            class="text-sm text-gray-500 hover:text-gray-700"
-            onclick={() => goto('/dashboard')}
+            class="btn btn-ghost btn-sm"
+            onclick={async () => {
+              if (!$currentUser) return;
+              
+              // Auto-complete onboarding with minimal data
+              console.log('⏭️ User skipped onboarding, marking as complete...');
+              await ProfileService.upsertProfile(
+                $currentUser.id,
+                $currentUser.email?.split('@')[0] || 'User',
+                undefined
+              );
+              
+              await invalidateAll();
+              goto('/dashboard');
+            }}
           >
-            Später vervollständigen →
+            ⏭️ Überspringen & später vervollständigen
           </button>
         </div>
       {/if}
