@@ -14,16 +14,19 @@
   <title>BrainrotAI - Cognitive Performance Testing</title>
 </svelte:head>
 
-<div class="min-h-screen bg-white flex flex-col items-center justify-center px-4 pwa-safe-screen pt-24">
+<div class="min-h-screen bg-white flex flex-col px-4 pwa-safe-screen">
   
   <!-- Top Navigation (wenn nicht eingeloggt) -->
   {#if !$isAuthenticated}
-    <div class="absolute top-4 left-0 right-0 flex justify-end px-4">
+    <div class="w-full flex justify-end pt-4 pb-2">
       <button onclick={() => goto('/auth')} class="btn-secondary text-sm md:text-base">
         Login / Registrieren
       </button>
     </div>
   {/if}
+  
+  <!-- Spacer für zentrierten Content -->
+  <div class="flex-1 flex flex-col items-center justify-center">
   
   <!-- Header mit Logo -->
   <div class="text-center mb-12 animate-fadeIn">
@@ -81,6 +84,8 @@
         {/if}
       </p>
     </div>
+  </div>
+  
   </div>
 
 </div>
