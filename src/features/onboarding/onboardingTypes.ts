@@ -14,16 +14,10 @@ export type UserGoal =
   | 'performanceAwareness'
   | 'unsure';
 
-export type TimeSlot = 
-  | '06:00' | '07:00' | '08:00' | '09:00' | '10:00' | '11:00'
-  | '12:00' | '13:00' | '14:00' | '15:00' | '16:00' | '17:00'
-  | '18:00' | '19:00' | '20:00' | '21:00' | '22:00';
-
 export interface TrackingContext {
   id: string;
   label: string;
-  slot: TimeSlot;
-  fixedTime: string; // "06:00" - "22:00"
+  time: string; // "HH:MM" im 24h-Format, 15-Minuten-Raster
 }
 
 export interface OnboardingState {
@@ -32,35 +26,16 @@ export interface OnboardingState {
   completed: boolean;
 }
 
-// Time slot options with labels
-export const TIME_SLOT_OPTIONS: Array<{ value: TimeSlot; label: string }> = [
-  { value: '06:00', label: '06:00 Uhr (Früh morgens)' },
-  { value: '07:00', label: '07:00 Uhr (Morgens)' },
-  { value: '08:00', label: '08:00 Uhr (Morgens)' },
-  { value: '09:00', label: '09:00 Uhr (Vormittags)' },
-  { value: '10:00', label: '10:00 Uhr (Vormittags)' },
-  { value: '11:00', label: '11:00 Uhr (Vormittags)' },
-  { value: '12:00', label: '12:00 Uhr (Mittags)' },
-  { value: '13:00', label: '13:00 Uhr (Mittags)' },
-  { value: '14:00', label: '14:00 Uhr (Nachmittags)' },
-  { value: '15:00', label: '15:00 Uhr (Nachmittags)' },
-  { value: '16:00', label: '16:00 Uhr (Nachmittags)' },
-  { value: '17:00', label: '17:00 Uhr (Nachmittags)' },
-  { value: '18:00', label: '18:00 Uhr (Abends)' },
-  { value: '19:00', label: '19:00 Uhr (Abends)' },
-  { value: '20:00', label: '20:00 Uhr (Abends)' },
-  { value: '21:00', label: '21:00 Uhr (Abends)' },
-  { value: '22:00', label: '22:00 Uhr (Spät abends)' }
+// Predefined context suggestions with default times
+export const CONTEXT_SUGGESTIONS_WITH_TIMES = [
+  { label: 'Vor dem Lernen / Arbeiten', defaultTime: '08:00' },
+  { label: 'Nach Social Media / Scrollen', defaultTime: '12:00' },
+  { label: 'Nach der Uni / Arbeit', defaultTime: '17:00' },
+  { label: 'Abends vor dem Schlafen', defaultTime: '21:30' }
 ] as const;
 
-// Predefined context suggestions
-export const CONTEXT_SUGGESTIONS = [
-  'Vor dem Lernen',
-  'Nach Social Media',
-  'Abends vor dem Schlafen',
-  'Nach dem Sport',
-  'Morgens nach dem Aufwachen'
-] as const;
+// Legacy: Simple label list for backward compatibility
+export const CONTEXT_SUGGESTIONS = CONTEXT_SUGGESTIONS_WITH_TIMES.map(c => c.label);
 
 // User goal labels
 export const USER_GOAL_LABELS: Record<UserGoal, { label: string; description: string }> = {

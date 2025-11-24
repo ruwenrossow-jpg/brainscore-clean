@@ -2,33 +2,29 @@
   /**
    * Onboarding Wizard
    * 
-   * 5-step onboarding flow:
+   * 4-step onboarding flow:
    * 1. Welcome & Name
    * 2. Goal selection (max 3)
-   * 3. Context selection (max 3)
-   * 4. Time configuration
-   * 5. Summary + ICS download + first test
+   * 3. Context + Time selection (max 3, combined)
+   * 4. Summary + ICS download + first test
    */
   import { goto, invalidateAll } from '$app/navigation';
   import { onboarding } from './onboardingState';
   import { currentUser } from '$lib/stores/auth.store';
   import { ProfileService } from '$lib/services/profile.service';
+  import ContextAndTimeStep from './ContextAndTimeStep.svelte';
   import { 
-    USER_GOAL_LABELS, 
-    CONTEXT_SUGGESTIONS, 
-    TIME_SLOT_OPTIONS,
+    USER_GOAL_LABELS,
     type UserGoal,
-    type TimeSlot,
     type TrackingContext
   } from './onboardingTypes';
   
-  type Step = 1 | 2 | 3 | 4 | 5;
+  type Step = 1 | 2 | 3 | 4;
   
   let currentStep = $state<Step>(1);
   let userName = $state('');
   let selectedGoals = $state<UserGoal[]>([]);
   let contexts = $state<TrackingContext[]>([]);
-  let customContextLabel = $state('');
   let isDownloadingICS = $state(false);
   let isSaving = $state(false);
   
@@ -45,45 +41,9 @@
     }
   }
   
-  // Step 3: Add predefined context
-  function addPredefinedContext(label: string) {
-    if (contexts.length >= 3) return;
-    
-    const newContext: TrackingContext = {
-      id: crypto.randomUUID(),
-      label,
-      slot: '08:00', // Default morning
-      fixedTime: '08:00'
-    };
-    contexts = [...contexts, newContext];
-  }
-  
-  // Step 3: Add custom context
-  function addCustomContext() {
-    if (!customContextLabel.trim() || contexts.length >= 3) return;
-    
-    const newContext: TrackingContext = {
-      id: crypto.randomUUID(),
-      label: customContextLabel.trim(),
-      slot: '08:00', // Default morning
-      fixedTime: '08:00'
-    };
-    contexts = [...contexts, newContext];
-    customContextLabel = '';
-  }
-  
-  // Step 3: Remove context
-  function removeContext(id: string) {
-    contexts = contexts.filter(c => c.id !== id);
-  }
-  
-  // Step 4: Update context time slot
-  function updateContextSlot(id: string, slot: TimeSlot) {
-    contexts = contexts.map(ctx => 
-      ctx.id === id 
-        ? { ...ctx, slot, fixedTime: slot }
-        : ctx
-    );
+  // Step 3: Handle context changes from ContextAndTimeStep
+  function handleContextsChange(newContexts: TrackingContext[]) {
+    contexts = newContexts;
   }
   
   // Navigation
@@ -97,10 +57,10 @@
       return;
     }
     if (currentStep === 3 && contexts.length === 0) {
-      alert('Bitte füge mindestens einen Kontext hinzu.');
+      alert('Bitte wähle mindestens eine Situation mit Uhrzeit aus.');
       return;
     }
-    if (currentStep < 5) {
+    if (currentStep < 4) {
       currentStep = (currentStep + 1) as Step;
     }
   }
@@ -111,7 +71,7 @@
     }
   }
   
-  // Step 5: Download ICS
+  // Step 4: Download ICS
   async function downloadICS() {
     if (contexts.length === 0) {
       alert('Keine Kontexte zum Exportieren vorhanden.');
@@ -147,7 +107,7 @@
     }
   }
   
-  // Step 5: Complete onboarding and start first test
+  // Step 4: Complete onboarding and start first test
   async function startFirstTest() {
     if (!$currentUser) {
       alert('Du musst eingeloggt sein, um fortzufahren.');
@@ -196,15 +156,15 @@
     <!-- Progress Indicator -->
     <div class="mb-8">
       <div class="flex items-center justify-center gap-2 mb-4">
-        {#each [1, 2, 3, 4, 5] as step}
+        {#each [1, 2, 3, 4] as step}
           <div class="w-2 h-2 rounded-full {currentStep === step ? 'bg-black' : currentStep > step ? 'bg-gray-400' : 'bg-gray-200'}"></div>
-          {#if step < 5}
+          {#if step < 4}
             <div class="w-8 h-0.5 bg-gray-300"></div>
           {/if}
         {/each}
       </div>
       <p class="text-center text-sm text-gray-500">
-        Schritt {currentStep} von 5
+        Schritt {currentStep} von 4
       </p>
     </div>
 
@@ -303,148 +263,30 @@
           </div>
         {/if}
         
-        <!-- Step 3: Context Selection -->
+        <!-- Step 3: Context + Time Selection (Combined) -->
         {#if currentStep === 3}
-          <div class="space-y-6">
-            <div>
-              <h2 class="text-4xl font-black text-gray-900 mb-3">Welche Situationen?</h2>
-              <p class="text-gray-600 text-base">
-                Wann möchtest du deine Aufmerksamkeit messen? Wähle bis zu 3 Alltagssituationen.
-              </p>
-            </div>
-            
-            <!-- Predefined Suggestions -->
-            {#if contexts.length < 3}
-              <div>
-                <div class="text-sm font-semibold mb-2">Vorschläge:</div>
-                <div class="flex flex-wrap gap-2">
-                  {#each CONTEXT_SUGGESTIONS as suggestion}
-                    {#if !contexts.some(c => c.label === suggestion)}
-                      <button
-                        onclick={() => addPredefinedContext(suggestion)}
-                        class="btn btn-sm btn-outline"
-                      >
-                        + {suggestion}
-                      </button>
-                    {/if}
-                  {/each}
-                </div>
-              </div>
-            {/if}
-            
-            <!-- Custom Context Input -->
-            {#if contexts.length < 3}
-              <div>
-                <div class="text-sm font-semibold mb-2">Eigene Situation:</div>
-                <div class="flex gap-3">
-                  <input
-                    type="text"
-                    bind:value={customContextLabel}
-                    placeholder="z.B. 'Vor dem Joggen'"
-                    class="input input-bordered flex-1 h-12 text-base font-medium rounded-xl bg-gray-50 border-gray-300 focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/20"
-                    onkeydown={(e) => e.key === 'Enter' && addCustomContext()}
-                  />
-                  <button
-                    onclick={addCustomContext}
-                    class="btn-gradient-primary px-6 font-black"
-                    disabled={!customContextLabel.trim()}
-                  >
-                    Hinzufügen
-                  </button>
-                </div>
-              </div>
-            {/if}
-            
-            <!-- Selected Contexts -->
-            {#if contexts.length > 0}
-              <div>
-                <div class="text-sm font-semibold mb-2">Deine Situationen:</div>
-                <div class="space-y-2">
-                  {#each contexts as context}
-                    <div class="p-3 bg-white rounded-lg border border-gray-300 flex justify-between items-center">
-                      <span class="font-medium">{context.label}</span>
-                      <button
-                        onclick={() => removeContext(context.id)}
-                        class="text-gray-500 hover:text-red-600 text-xl"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  {/each}
-                </div>
-              </div>
-            {/if}
-            
-            <div class="text-sm text-gray-500 text-center">
-              {contexts.length} von 3 Situationen ausgewählt
-            </div>
-            
-            <div class="flex gap-4">
-              <button onclick={prevStep} class="btn-secondary flex-1 h-14 font-bold">
-                <span class="material-symbols-outlined">arrow_back</span>
-                Zurück
-              </button>
-              <button 
-                onclick={nextStep} 
-                class="btn-gradient-primary flex-1 h-14 font-black"
-                disabled={contexts.length === 0}
-              >
-                Weiter <span class="ml-2">→</span>
-              </button>
-            </div>
+          <ContextAndTimeStep 
+            bind:contexts={contexts}
+            onContextsChange={handleContextsChange}
+          />
+          
+          <div class="flex gap-4 mt-6">
+            <button onclick={prevStep} class="btn-secondary flex-1 h-14 font-bold">
+              <span class="material-symbols-outlined">arrow_back</span>
+              Zurück
+            </button>
+            <button 
+              onclick={nextStep} 
+              class="btn-gradient-primary flex-1 h-14 font-black"
+              disabled={contexts.length === 0}
+            >
+              Weiter <span class="ml-2">→</span>
+            </button>
           </div>
         {/if}
         
-        <!-- Step 4: Time Configuration -->
+        <!-- Step 4: Summary & Actions -->
         {#if currentStep === 4}
-          <div class="space-y-6">
-            <div>
-              <h2 class="text-4xl font-black text-gray-900 mb-3">Welche Zeiten?</h2>
-              <p class="text-gray-600 text-base">
-                Wähle für jede Situation eine passende Uhrzeit für deine Tests.
-              </p>
-            </div>
-            
-            <div class="space-y-4">
-              {#each contexts as context}
-                <div class="p-4 bg-white rounded-lg border border-gray-300">
-                  <div class="font-semibold mb-3">{context.label}</div>
-                  <div>
-                    <label for="time-{context.id}" class="block text-xs text-gray-600 mb-2">
-                      Uhrzeit wählen:
-                    </label>
-                    <select
-                      id="time-{context.id}"
-                      value={context.slot}
-                      onchange={(e) => updateContextSlot(context.id, e.currentTarget.value as TimeSlot)}
-                      class="select select-bordered w-full"
-                    >
-                      {#each TIME_SLOT_OPTIONS as option}
-                        <option value={option.value}>{option.label}</option>
-                      {/each}
-                    </select>
-                  </div>
-                </div>
-              {/each}
-            </div>
-            
-            <div class="flex gap-4">
-              <button onclick={prevStep} class="btn-secondary flex-1 h-14 font-bold">
-                <span class="material-symbols-outlined">arrow_back</span>
-                Zurück
-              </button>
-              <button 
-                onclick={nextStep} 
-                class="btn-gradient-primary flex-1 h-14 font-black"
-              >
-                Weiter <span class="ml-2">→</span>
-              </button>
-            </div>
-          </div>
-        {/if}
-        
-        <!-- Step 5: Summary & Actions -->
-        {#if currentStep === 5}
           <div class="space-y-6">
             <div>
               <h2 class="text-4xl font-black text-gray-900 mb-3">Alles bereit!</h2>
@@ -473,7 +315,7 @@
                     <div class="flex justify-between text-sm">
                       <span>{context.label}</span>
                       <span class="text-gray-600 font-mono">
-                        {context.fixedTime} Uhr
+                        {context.time} Uhr
                       </span>
                     </div>
                   {/each}

@@ -73,8 +73,8 @@ function generateEvent(context: TrackingContext, startDate: Date, index: number)
   const uid = `${context.id}@brainscore.app`;
   const dtstamp = formatICSDate(new Date());
   
-  // Calculate start datetime (today at fixedTime)
-  const [hours, minutes] = context.fixedTime.split(':').map(Number);
+  // Calculate start datetime (today at context.time)
+  const [hours, minutes] = context.time.split(':').map(Number);
   const eventStart = new Date(startDate);
   eventStart.setHours(hours, minutes, 0, 0);
   
