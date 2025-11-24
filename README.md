@@ -120,13 +120,21 @@ npm run check      # TypeScript Check
 npm run build      # Production Build
 ```
 
+## 📚 Dokumentation
+
+Detaillierte Dokumentation findest du im `docs/` Verzeichnis:
+
+- **[Requirements](docs/requirements.md)** - Funktionale und nicht-funktionale Anforderungen
+- **[Design Guide](docs/design-guide.md)** - Brand, UI-Komponenten, Typografie, Farben
+- **[Brainrot-SART Technical Spec](docs/brainrot-sart-short-v1_brainscore-v1.md)** - Test-Logik und BrainScore-Berechnung
+
 ## 📝 Nächste Schritte
 
 - [ ] Unit-Tests für SartService
 - [ ] E2E-Tests mit Playwright
-- [ ] PWA-Features (Offline-Modus)
-- [ ] User-Authentication
-- [ ] Dashboard für Ergebnisse
+- [ ] Erweiterte Screentime-Integration (native APIs)
+- [ ] Personalisierte Insights und Empfehlungen
+- [ ] Multi-Test-Battery (Stroop, N-Back, etc.)
 
 ---
 
