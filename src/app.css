@@ -156,3 +156,26 @@ a:hover {
     @apply bg-gradient-purple bg-clip-text text-transparent;
   }
 }
+
+/* WCAG AA Contrast Enhancement - Accessible Color Utilities */
+@layer components {
+  /* Accessible muted text - replaces text-gray-500 for better contrast (4.57:1 → 7.22:1) */
+  .text-muted {
+    @apply text-gray-600;
+  }
+  
+  /* Accessible subtle text - replaces text-gray-400 for icons/secondary (2.85:1 → 4.57:1) */
+  .text-subtle {
+    @apply text-gray-500;
+  }
+  
+  /* Accessible hint text for small labels */
+  .text-hint {
+    @apply text-xs text-gray-600;
+  }
+  
+  /* Accessible description text on colored backgrounds */
+  .text-on-brand {
+    @apply text-white/95;
+  }
+}

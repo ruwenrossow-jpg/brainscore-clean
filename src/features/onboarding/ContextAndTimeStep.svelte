@@ -8,7 +8,6 @@
    * 
    * Uses native <input type="time" step="900"> for mobile-friendly time picker
    */
-  import { onMount } from 'svelte';
   import { CONTEXT_SUGGESTIONS_WITH_TIMES, type TrackingContext } from './onboardingTypes';
   
   interface Props {
@@ -22,11 +21,6 @@
   let activeContextIds = $state<Set<string>>(new Set());
   let customLabel = $state('');
   let customTime = $state('08:00');
-  
-  // Scroll to top when component mounts
-  onMount(() => {
-    window.scrollTo(0, 0);
-  });
   
   // Check if a predefined context is already added
   function isContextActive(label: string): boolean {
@@ -91,10 +85,10 @@
   }
 </script>
 
-<div class="space-y-6">
+<div class="space-y-4 md:space-y-6">
   <div>
-    <h2 class="text-4xl font-black text-gray-900 mb-3">Wann & wofür testen?</h2>
-    <p class="text-gray-600 text-base mb-2">
+    <h2 class="text-2xl md:text-3xl lg:text-4xl font-black text-gray-900 mb-2 md:mb-3">Wann & wofür testen?</h2>
+    <p class="text-gray-600 text-sm md:text-base mb-2">
       Wähle bis zu drei Situationen, in denen du regelmäßig einen Test machen möchtest, und lege gleich die Uhrzeit fest.
     </p>
     <div class="text-sm text-brand-purple font-bold">
@@ -112,7 +106,7 @@
       <button
         onclick={() => togglePredefinedContext(label, defaultTime)}
         disabled={isDisabled}
-        class="w-full text-left p-5 rounded-2xl border-2 transition-all {
+        class="w-full text-left p-4 md:p-5 rounded-xl md:rounded-2xl border-2 transition-all {
           isActive
             ? 'border-brand-purple bg-brand-purple/5 shadow-lg'
             : isDisabled
@@ -120,9 +114,9 @@
               : 'border-gray-200 hover:border-brand-purple/50 hover:bg-gray-50'
         }"
       >
-        <div class="flex items-start justify-between gap-4">
+        <div class="flex items-start justify-between gap-3">
           <div class="flex-1">
-            <div class="font-black text-lg text-gray-900 mb-1">{label}</div>
+            <div class="font-black text-base md:text-lg text-gray-900 mb-1">{label}</div>
             
             {#if isActive && matchingContext}
               <!-- Time Picker (active state) -->
@@ -137,12 +131,12 @@
                   value={matchingContext.time}
                   oninput={(e) => updateContextTime(matchingContext.id, e.currentTarget.value)}
                   onclick={(e) => e.stopPropagation()}
-                  class="input input-bordered w-full max-w-[200px] h-12 text-base font-mono bg-white"
+                  class="input input-bordered w-full max-w-[180px] h-10 md:h-12 text-sm md:text-base font-mono bg-white"
                 />
               </div>
             {:else}
               <!-- Default time hint (inactive state) -->
-              <div class="text-sm text-gray-500">
+              <div class="text-sm text-gray-600">
                 Standard: {defaultTime} Uhr
               </div>
             {/if}
@@ -150,11 +144,11 @@
           
           <div class="flex-shrink-0">
             {#if isActive}
-              <span class="material-symbols-outlined text-3xl text-brand-purple">check_circle</span>
+              <span class="material-symbols-outlined text-2xl md:text-3xl text-brand-purple">check_circle</span>
             {:else if isDisabled}
-              <span class="material-symbols-outlined text-3xl text-gray-300">radio_button_unchecked</span>
+              <span class="material-symbols-outlined text-2xl md:text-3xl text-gray-300">radio_button_unchecked</span>
             {:else}
-              <span class="material-symbols-outlined text-3xl text-gray-400">add_circle</span>
+              <span class="material-symbols-outlined text-2xl md:text-3xl text-gray-500">add_circle</span>
             {/if}
           </div>
         </div>
@@ -164,8 +158,8 @@
   
   <!-- Custom Context Card -->
   {#if contexts.length < 3}
-    <div class="p-5 rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50">
-      <div class="font-black text-lg text-gray-900 mb-3">Eigene Situation hinzufügen</div>
+    <div class="p-4 md:p-5 rounded-xl md:rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50">
+      <div class="font-black text-base md:text-lg text-gray-900 mb-3">Eigene Situation hinzufügen</div>
       
       <div class="space-y-3">
         <div>
@@ -177,7 +171,7 @@
             type="text"
             bind:value={customLabel}
             placeholder="z.B. 'Vor dem Training'"
-            class="input input-bordered w-full h-12 text-base font-medium rounded-xl bg-white border-gray-300 focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/20"
+            class="input input-bordered w-full h-10 md:h-12 text-sm md:text-base font-medium rounded-xl bg-white border-gray-300 focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/20"
             onkeydown={(e) => e.key === 'Enter' && addCustomContext()}
           />
         </div>
@@ -191,13 +185,13 @@
             type="time"
             step="900"
             bind:value={customTime}
-            class="input input-bordered w-full max-w-[200px] h-12 text-base font-mono bg-white"
+            class="input input-bordered w-full max-w-[180px] h-10 md:h-12 text-sm md:text-base font-mono bg-white"
           />
         </div>
         
         <button
           onclick={addCustomContext}
-          class="btn-gradient-primary w-full h-12 font-black"
+          class="btn-gradient-primary w-full h-10 md:h-12 text-sm md:text-base font-black"
           disabled={!customLabel.trim()}
         >
           <span class="material-symbols-outlined mr-2">add</span>
@@ -220,7 +214,7 @@
             </div>
             <button
               onclick={() => removeContext(context.id)}
-              class="text-gray-400 hover:text-red-600 transition-colors"
+              class="text-gray-500 hover:text-red-600 transition-colors"
               aria-label="Entfernen"
             >
               <span class="material-symbols-outlined text-xl">close</span>

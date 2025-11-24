@@ -7,13 +7,22 @@
    * - Hydriert Store mit Server-Daten
    * - Startet Auth Listener für Live-Updates
    * - PWA Navigation Handling
+   * - Globales Scroll-Verhalten
    */
   import '../app.css';
   import { onMount } from 'svelte';
+  import { afterNavigate } from '$app/navigation';
   import { auth } from '$lib/stores/auth.store';
   import type { LayoutData } from './$types';
   
   let { data, children }: { data: LayoutData; children: any } = $props();
+
+  // Globales Scroll-Verhalten: Jeder Routenwechsel startet oben
+  afterNavigate(() => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+    }
+  });
 
   // Store mit Server-Daten hydrieren
   onMount(() => {

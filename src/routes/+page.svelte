@@ -14,19 +14,7 @@
   <title>BrainrotAI - Cognitive Performance Testing</title>
 </svelte:head>
 
-<div class="min-h-screen bg-white flex flex-col px-4 pwa-safe-screen">
-  
-  <!-- Top Navigation (wenn nicht eingeloggt) -->
-  {#if !$isAuthenticated}
-    <div class="w-full flex justify-end pt-4 pb-2">
-      <button onclick={() => goto('/auth')} class="btn-secondary text-sm md:text-base">
-        Login / Registrieren
-      </button>
-    </div>
-  {/if}
-  
-  <!-- Spacer für zentrierten Content -->
-  <div class="flex-1 flex flex-col items-center justify-center">
+<div class="min-h-screen bg-white flex flex-col items-center justify-center px-4 pwa-safe-screen">
   
   <!-- Header mit Logo -->
   <div class="text-center mb-12 animate-fadeIn">
@@ -38,7 +26,7 @@
         BrainrotAI
       </h1>
     </div>
-    <p class="text-lg md:text-xl text-gray-600 font-normal">
+    <p class="text-lg md:text-xl text-gray-700 font-normal">
       Cognitive Performance Testing
     </p>
   </div>
@@ -76,7 +64,7 @@
         {/if}
       </div>
 
-      <p class="text-xs text-gray-500 text-center mt-4">
+      <p class="text-xs text-gray-600 text-center mt-4">
         {#if $isAuthenticated}
           Deine Tests werden automatisch gespeichert und sind jederzeit im Dashboard verfügbar
         {:else}
@@ -84,8 +72,6 @@
         {/if}
       </p>
     </div>
-  </div>
-  
   </div>
 
 </div>

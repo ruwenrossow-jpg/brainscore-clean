@@ -52,7 +52,7 @@
       
       <!-- Hero Score Display -->
       <div class="w-full mb-10">
-        <p class="text-sm text-gray-500 uppercase tracking-wider mb-4 font-bold">Dein BrainScore</p>
+        <p class="text-sm text-gray-600 uppercase tracking-wider mb-4 font-bold">Dein BrainScore</p>
         <div class="text-8xl font-black mb-6 bg-gradient-purple bg-clip-text text-transparent">{metrics.score}</div>
         {#if scoreBand.color === 'success'}
           <div class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-brand-green text-white font-bold text-lg">

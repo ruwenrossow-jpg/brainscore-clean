@@ -150,11 +150,11 @@
   }
 </script>
 
-<div class="min-h-screen bg-white flex items-center justify-center px-4 pwa-safe-screen">
-  <div class="w-full max-w-2xl">
+<div class="min-h-screen bg-white px-4 py-6 md:py-12 pwa-safe-screen">
+  <div class="w-full max-w-2xl mx-auto">
     
     <!-- Progress Indicator -->
-    <div class="mb-8">
+    <div class="mb-6 md:mb-8">
       <div class="flex items-center justify-center gap-2 mb-4">
         {#each [1, 2, 3, 4] as step}
           <div class="w-2 h-2 rounded-full {currentStep === step ? 'bg-black' : currentStep > step ? 'bg-gray-400' : 'bg-gray-200'}"></div>
@@ -163,7 +163,7 @@
           {/if}
         {/each}
       </div>
-      <p class="text-center text-sm text-gray-500">
+      <p class="text-center text-sm text-gray-600">
         Schritt {currentStep} von 4
       </p>
     </div>
@@ -174,20 +174,20 @@
         
         <!-- Step 1: Welcome & Name -->
         {#if currentStep === 1}
-          <div class="space-y-8">
+          <div class="space-y-6 md:space-y-8">
             <div class="text-center">
-              <h1 class="text-5xl font-black text-gray-900 mb-6 leading-tight">
+              <h1 class="text-3xl md:text-4xl lg:text-5xl font-black text-gray-900 mb-4 md:mb-6 leading-tight">
                 WILLKOMMEN! LASS UNS DEINE <span class="text-gradient-hero">AUFMERKSAMKEIT</span> VERSTEHEN.
               </h1>
-              <p class="text-gray-600 text-lg mb-4">
+              <p class="text-gray-600 text-base md:text-lg mb-3 md:mb-4">
                 In wenigen Minuten richten wir deinen persönlichen Fokus-Tracker ein.
               </p>
-              <p class="text-sm text-gray-500">
+              <p class="text-sm text-gray-600">
                 Dauert nur 3–4 Minuten
               </p>
             </div>
             <div>
-              <label for="userName" class="block text-base font-bold text-gray-900 mb-3">
+              <label for="userName" class="block text-sm md:text-base font-bold text-gray-900 mb-2 md:mb-3">
                 Wie sollen wir dich nennen?
               </label>
               <input
@@ -195,13 +195,13 @@
                 type="text"
                 bind:value={userName}
                 placeholder="Dein Name"
-                class="input input-bordered w-full h-14 text-lg font-medium rounded-xl bg-gray-50 border-gray-300 focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/20"
+                class="input input-bordered w-full h-12 md:h-14 text-base md:text-lg font-medium rounded-xl bg-gray-50 border-gray-300 focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/20"
                 onkeydown={(e) => e.key === 'Enter' && nextStep()}
               />
             </div>
             <button 
               onclick={nextStep} 
-              class="btn-gradient-primary w-full h-16 text-xl font-black"
+              class="btn-gradient-primary w-full h-12 md:h-14 text-lg md:text-xl font-black"
               disabled={!userName.trim()}
             >
               Los geht's <span class="ml-2">→</span>
@@ -211,10 +211,10 @@
         
         <!-- Step 2: Goals Selection -->
         {#if currentStep === 2}
-          <div class="space-y-6">
+          <div class="space-y-4 md:space-y-6">
             <div>
-              <h2 class="text-4xl font-black text-gray-900 mb-3">Deine Ziele</h2>
-              <p class="text-gray-600 text-base">
+              <h2 class="text-2xl md:text-3xl lg:text-4xl font-black text-gray-900 mb-2 md:mb-3">Deine Ziele</h2>
+              <p class="text-gray-600 text-sm md:text-base">
                 Wähle bis zu 3 Ziele aus, die für dich wichtig sind.
               </p>
             </div>
@@ -223,38 +223,38 @@
               {#each Object.entries(USER_GOAL_LABELS) as [goal, { label, description }]}
                 <button
                   onclick={() => toggleGoal(goal as UserGoal)}
-                  class="w-full text-left p-5 rounded-2xl border-2 transition-all transform hover:-translate-y-1 {
+                  class="w-full text-left p-4 md:p-5 rounded-xl md:rounded-2xl border-2 transition-all transform hover:-translate-y-1 {
                     selectedGoals.includes(goal as UserGoal)
                       ? 'border-brand-purple bg-brand-purple text-white shadow-lg shadow-purple-500/30'
                       : 'border-gray-200 hover:border-brand-purple/50 hover:bg-gray-50'
                   }"
                   disabled={!selectedGoals.includes(goal as UserGoal) && selectedGoals.length >= 3}
                 >
-                  <div class="flex items-center justify-between">
-                    <div>
-                      <div class="font-black text-lg">{label}</div>
-                      <div class="text-sm opacity-80">{description}</div>
+                  <div class="flex items-center justify-between gap-3">
+                    <div class="flex-1">
+                      <div class="font-black text-base md:text-lg">{label}</div>
+                      <div class="text-xs md:text-sm text-white/90">{description}</div>
                     </div>
                     {#if selectedGoals.includes(goal as UserGoal)}
-                      <span class="material-symbols-outlined text-3xl">check_circle</span>
+                      <span class="material-symbols-outlined text-2xl md:text-3xl">check_circle</span>
                     {/if}
                   </div>
                 </button>
               {/each}
             </div>
             
-            <div class="text-sm text-gray-500 text-center">
+            <div class="text-sm text-gray-700 text-center font-medium">
               {selectedGoals.length} von 3 ausgewählt
             </div>
             
-            <div class="flex gap-4">
-              <button onclick={prevStep} class="btn-secondary flex-1 h-14 font-bold">
+            <div class="flex gap-3 md:gap-4">
+              <button onclick={prevStep} class="btn-secondary flex-1 h-12 md:h-14 text-sm md:text-base font-bold">
                 <span class="material-symbols-outlined">arrow_back</span>
                 Zurück
               </button>
               <button 
                 onclick={nextStep} 
-                class="btn-gradient-primary flex-1 h-14 font-black"
+                class="btn-gradient-primary flex-1 h-12 md:h-14 text-base md:text-lg font-black"
                 disabled={selectedGoals.length === 0}
               >
                 Weiter <span class="ml-2">→</span>
@@ -270,14 +270,14 @@
             onContextsChange={handleContextsChange}
           />
           
-          <div class="flex gap-4 mt-6">
-            <button onclick={prevStep} class="btn-secondary flex-1 h-14 font-bold">
+          <div class="flex gap-3 md:gap-4 mt-4 md:mt-6">
+            <button onclick={prevStep} class="btn-secondary flex-1 h-12 md:h-14 text-sm md:text-base font-bold">
               <span class="material-symbols-outlined">arrow_back</span>
               Zurück
             </button>
             <button 
               onclick={nextStep} 
-              class="btn-gradient-primary flex-1 h-14 font-black"
+              class="btn-gradient-primary flex-1 h-12 md:h-14 text-base md:text-lg font-black"
               disabled={contexts.length === 0}
             >
               Weiter <span class="ml-2">→</span>
@@ -287,9 +287,9 @@
         
         <!-- Step 4: Summary & Actions -->
         {#if currentStep === 4}
-          <div class="space-y-6">
+          <div class="space-y-4 md:space-y-6">
             <div>
-              <h2 class="text-4xl font-black text-gray-900 mb-3">Alles bereit!</h2>
+              <h2 class="text-2xl md:text-3xl lg:text-4xl font-black text-gray-900 mb-2 md:mb-3">Alles bereit!</h2>
               <p class="text-gray-600 text-base">
                 Du hast deine Ziele und Check-in-Zeiten konfiguriert.
               </p>
@@ -341,7 +341,7 @@
               
               <button
                 onclick={startFirstTest}
-                class="btn-gradient-primary w-full h-16 text-xl font-black"
+                class="btn-gradient-primary w-full h-12 md:h-14 text-lg md:text-xl font-black"
                 disabled={isSaving}
               >
                 {#if isSaving}
