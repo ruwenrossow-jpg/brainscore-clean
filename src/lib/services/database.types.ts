@@ -131,6 +131,70 @@ export interface Database {
           app3_activations?: number | null;
         };
       };
+      daily_scores: {
+        Row: {
+          id: string;
+          user_id: string;
+          date: string;
+          daily_score: number;
+          test_count: number;
+          first_test_at: string | null;
+          last_test_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          date: string;
+          daily_score: number;
+          test_count: number;
+          first_test_at?: string | null;
+          last_test_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          date?: string;
+          daily_score?: number;
+          test_count?: number;
+          first_test_at?: string | null;
+          last_test_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      digital_logs: {
+        Row: {
+          id: string;
+          test_id: string;
+          screen_time_bucket: string;
+          main_categories: string[];
+          pickup_frequency: string;
+          created_at: string;
+          updated_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          test_id: string;
+          screen_time_bucket: string;
+          main_categories: string[];
+          pickup_frequency: string;
+          created_at?: string;
+          updated_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          test_id?: string;
+          screen_time_bucket?: string;
+          main_categories?: string[];
+          pickup_frequency?: string;
+          created_at?: string;
+          updated_at?: string | null;
+        };
+      };
     };
     Views: {
       [_ in never]: never;

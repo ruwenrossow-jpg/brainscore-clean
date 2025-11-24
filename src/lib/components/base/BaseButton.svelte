@@ -30,7 +30,7 @@
   }: Props = $props();
   
   const variantClass = {
-    primary: 'btn-primary text-white',
+    primary: 'btn-gradient-primary',
     secondary: 'btn-secondary',
     ghost: 'btn-ghost'
   };
@@ -44,7 +44,7 @@
 
 <button
   {type}
-  class="btn {variantClass[variant]} {sizeClass[size]} {fullWidth ? 'w-full' : ''} hover:opacity-90 transition-opacity"
+  class="btn {variantClass[variant]} {sizeClass[size]} {fullWidth ? 'w-full' : ''}"
   {disabled}
   onclick={(e) => {
     // Nur preventDefault wenn custom onclick handler

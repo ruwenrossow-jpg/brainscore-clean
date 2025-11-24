@@ -18,49 +18,56 @@
   
   <!-- Top Navigation (wenn nicht eingeloggt) -->
   {#if !$isAuthenticated}
-    <div class="absolute top-4 right-4">
-      <button onclick={() => goto('/auth')} class="btn btn-ghost btn-sm text-black">
+    <div class="absolute top-6 right-6">
+      <button onclick={() => goto('/auth')} class="btn-secondary">
         Login / Registrieren
       </button>
     </div>
   {/if}
   
-  <!-- Header -->
-  <div class="text-center mb-12">
-    <h1 class="text-5xl md:text-6xl font-bold text-black mb-3 tracking-tight">
-      BrainrotAI
-    </h1>
-    <p class="text-base md:text-lg text-gray-600 font-light">
+  <!-- Header mit Logo -->
+  <div class="text-center mb-12 animate-fadeIn">
+    <div class="flex items-center justify-center gap-4 mb-6">
+      <div class="w-16 h-16 bg-gradient-purple rounded-full flex items-center justify-center shadow-purple-glow">
+        <span class="text-white font-black text-3xl">B</span>
+      </div>
+      <h1 class="text-5xl md:text-6xl font-black text-gray-900 tracking-tight">
+        BrainrotAI
+      </h1>
+    </div>
+    <p class="text-lg md:text-xl text-gray-600 font-normal">
       Cognitive Performance Testing
     </p>
   </div>
 
   <!-- Main Card -->
-  <div class="card bg-base-200 shadow-lg w-full max-w-md border border-gray-200">
-    <div class="card-body space-y-6">
+  <div class="card-modern w-full max-w-md animate-slideUp">
+    <div class="p-8 space-y-8">
       
       {#if $isAuthenticated}
         <!-- Eingeloggt: Fokus auf Kontrolle -->
-        <h2 class="text-2xl md:text-3xl font-bold text-black text-center leading-tight">
-          Gewinne die Kontrolle über deine Aufmerksamkeit zurück.
+        <h2 class="text-3xl md:text-4xl font-black text-gray-900 text-center leading-tight">
+          Gewinne die <span class="text-gradient-hero">Kontrolle</span> über deine Aufmerksamkeit zurück.
         </h2>
       {:else}
         <!-- Nicht eingeloggt: Fokus auf Klarheit -->
-        <h2 class="text-2xl md:text-3xl font-bold text-black text-center leading-tight">
-          Verstehe endlich, was deine Aufmerksamkeit wirklich steuert.
+        <h2 class="text-3xl md:text-4xl font-black text-gray-900 text-center leading-tight">
+          Verstehe endlich, was deine <span class="text-gradient-hero">Aufmerksamkeit</span> wirklich steuert.
         </h2>
       {/if}
 
-      <div class="card-actions flex-col justify-center pt-4 space-y-3">
+      <div class="flex flex-col justify-center pt-4 space-y-4">
         {#if $isAuthenticated}
-          <button onclick={() => goto('/dashboard')} class="btn btn-primary btn-lg w-full text-white hover:opacity-90 transition-opacity">
+          <button onclick={() => goto('/dashboard')} class="btn-gradient-primary w-full text-lg font-bold">
             Zum Dashboard
+            <span class="ml-2">→</span>
           </button>
         {:else}
-          <button onclick={() => goto('/auth')} class="btn btn-primary btn-lg w-full text-white hover:opacity-90 transition-opacity">
+          <button onclick={() => goto('/auth')} class="btn-gradient-primary w-full text-lg font-bold">
             Jetzt starten
+            <span class="ml-2">→</span>
           </button>
-          <button onclick={() => goto('/test')} class="btn btn-ghost btn-lg w-full text-black border border-gray-300">
+          <button onclick={() => goto('/test')} class="btn-secondary w-full text-base">
             Ohne Anmeldung testen
           </button>
         {/if}

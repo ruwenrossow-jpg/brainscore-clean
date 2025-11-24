@@ -1,9 +1,9 @@
 <script lang="ts">
   /**
-   * Onboarding Page
+   * Extended Onboarding Wizard Route
    * 
-   * NEW: Complete Wizard with Goals, Contexts, ICS Export
-   * Replaces old 2-step onboarding
+   * NEW: 4-step wizard with goals, contexts, ICS export
+   * Replaces simple 2-step onboarding
    */
   import OnboardingWizard from '$features/onboarding/OnboardingWizard.svelte';
 </script>

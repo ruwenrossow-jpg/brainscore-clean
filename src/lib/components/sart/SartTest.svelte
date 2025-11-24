@@ -119,59 +119,57 @@
   });
 </script>
 
-<div class="card bg-base-200 shadow-lg w-full max-w-lg border border-gray-200">
-  <div class="card-body items-center text-center">
+<div class="card-modern w-full max-w-lg animate-fadeIn">
+  <div class="p-8 items-center text-center">
     
     <!-- Progress Header -->
-    <div class="w-full flex justify-between items-center mb-4">
-      <h2 class="text-lg font-semibold text-black">Konzentrationstest</h2>
-      <span class="text-sm text-gray-600 font-mono">
-        {currentIndex} / {CONFIG.totalTrials}
-      </span>
+    <div class="w-full flex justify-between items-center mb-6">
+      <h2 class="text-xl font-bold text-gray-900">Konzentrationstest</h2>
     </div>
 
     <!-- Progress Bar -->
-    <div class="w-full bg-gray-300 rounded-full h-2 mb-8">
+    <div class="w-full bg-gray-100 rounded-full h-3 mb-8 overflow-hidden">
       <div 
-        class="bg-black h-2 rounded-full transition-all duration-300"
+        class="bg-gradient-purple h-3 rounded-full transition-all duration-500 ease-out"
         style="width: {progress}%"
       ></div>
     </div>
 
     <!-- Digit Display -->
-    <div class="min-h-[300px] flex items-center justify-center my-8 p-8 bg-white rounded-lg border-2 border-gray-300 w-full">
+    <div class="min-h-[320px] flex items-center justify-center my-8 p-12 bg-gray-50 rounded-2xl border border-gray-200 w-full shadow-inner">
       {#if testState === 'countdown'}
         <div class="text-center">
-          <div class="text-9xl font-bold text-black mb-4">
+          <div class="text-9xl font-black text-gray-900 mb-6 animate-pulse">
             {countdownValue}
           </div>
-          <p class="text-gray-600 text-lg">Test startet gleich...</p>
+          <p class="text-gray-600 text-lg font-medium">Test startet gleich...</p>
         </div>
       {:else if testState === 'running'}
         {#if showingMask}
-          <div class="text-8xl font-bold text-gray-300">
+          <div class="text-9xl font-black text-gray-300">
             ✱
           </div>
         {:else}
-          <div class="font-mono text-8xl font-bold text-black tracking-tighter">
+          <div class="font-mono text-9xl font-black text-gray-900 tracking-tighter">
             {currentDigit}
           </div>
         {/if}
       {:else if testState === 'finished'}
         <div class="text-center">
-          <div class="loading loading-spinner loading-lg mb-4"></div>
-          <p class="text-gray-600">Test wird ausgewertet...</p>
+          <div class="loading loading-spinner loading-lg mb-4 text-brand-purple"></div>
+          <p class="text-gray-600 font-medium">Test wird ausgewertet...</p>
         </div>
       {/if}
     </div>
 
     <!-- Response Button -->
-    <div class="w-full mt-4">
+    <div class="w-full mt-6">
       <button 
-        class="btn btn-lg w-full h-20 text-xl transition-opacity"
-        class:btn-primary={testState === 'running'}
-        class:btn-disabled={testState !== 'running'}
-        class:text-white={testState === 'running'}
+        class="btn-gradient-primary w-full h-24 text-2xl font-black transition-all duration-150 active:scale-95 active:shadow-lg"
+        class:opacity-50={testState !== 'running'}
+        class:cursor-not-allowed={testState !== 'running'}
+        class:hover:scale-105={testState === 'running'}
+        class:hover:shadow-purple-button-hover={testState === 'running'}
         onclick={handleRespond}
         disabled={testState !== 'running'}
       >
@@ -182,10 +180,6 @@
         {/if}
       </button>
     </div>
-
-    <p class="text-xs text-gray-500 mt-4">
-      ⚠️ Nicht bei der <strong>3</strong> klicken!
-    </p>
 
   </div>
 </div>

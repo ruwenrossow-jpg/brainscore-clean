@@ -103,20 +103,38 @@ export function calculateAccuracyScore(
  * - Good (600-900ms): 100 → 40 (linear decrease)
  * - Very slow (>900ms): 40 (overly cautious)
  * 
+ * PENALTY: Bei schnellen Reaktionen (<400ms) + hoher Fehlerquote (>25%) wird Score halbiert
+ * um "Spam-Klicken" zu bestrafen.
+ * 
  * @see docs/brainrot-sart-short-v1_brainscore-v1.md Section 6.2
  */
-export function calculateSpeedScore(meanGoRT: number): number {
+export function calculateSpeedScore(
+	meanGoRT: number,
+	commissionErrorRate: number,
+	omissionErrorRate: number
+): number {
+	let baseSpeedScore = 0;
+	
 	if (meanGoRT <= 300) {
-		return 60;
+		baseSpeedScore = 60;
 	} else if (meanGoRT < 600) {
 		// Linear from 60 at 300ms to 100 at 600ms
-		return linearInterpolate(meanGoRT, 300, 60, 600, 100);
+		baseSpeedScore = linearInterpolate(meanGoRT, 300, 60, 600, 100);
 	} else if (meanGoRT <= 900) {
 		// Linear from 100 at 600ms to 40 at 900ms
-		return linearInterpolate(meanGoRT, 600, 100, 900, 40);
+		baseSpeedScore = linearInterpolate(meanGoRT, 600, 100, 900, 40);
 	} else {
-		return 40;
+		baseSpeedScore = 40;
 	}
+	
+	// PENALTY: Bei schnellen Reaktionen + hohen Fehlerquoten (Spam-Klicken)
+	const totalErrorRate = (commissionErrorRate + omissionErrorRate) / 2;
+	if (meanGoRT < 400 && totalErrorRate > 0.25) {
+		// Bei >25% Fehlerquote und <400ms: Score halbieren
+		baseSpeedScore = baseSpeedScore * 0.5;
+	}
+	
+	return baseSpeedScore;
 }
 
 /**
@@ -184,7 +202,11 @@ export function calculateBrainScore(rawMetrics: RawMetrics): BrainScoreResult {
 		rawMetrics.commissionErrorRate,
 		rawMetrics.omissionErrorRate
 	);
-	const speedScore = calculateSpeedScore(rawMetrics.meanGoRT);
+	const speedScore = calculateSpeedScore(
+		rawMetrics.meanGoRT,
+		rawMetrics.commissionErrorRate,
+		rawMetrics.omissionErrorRate
+	);
 	const consistencyScore = calculateConsistencyScore(rawMetrics.goRtSD);
 	const disciplineScore = calculateDisciplineScore(rawMetrics.validTrialRatio);
 

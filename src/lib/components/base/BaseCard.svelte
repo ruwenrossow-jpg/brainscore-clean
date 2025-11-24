@@ -28,11 +28,11 @@
   };
 </script>
 
-<div class="card bg-base-200 shadow-lg w-full {widthClasses[maxWidth]} border border-gray-200">
-  <div class="card-body {centered ? 'items-center text-center' : ''}">
+<div class="card-modern w-full {widthClasses[maxWidth]}">
+  <div class="p-8 {centered ? 'items-center text-center' : ''}">
     
     {#if title}
-      <h2 class="card-title text-2xl font-semibold text-black {centered ? 'justify-center' : ''}">
+      <h2 class="text-2xl font-bold text-gray-900 mb-4 {centered ? 'text-center' : ''}">
         {title}
       </h2>
     {/if}

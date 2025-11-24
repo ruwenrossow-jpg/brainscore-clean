@@ -1,0 +1,486 @@
+<script lang="ts">
+  /**
+   * Onboarding Wizard
+   * 
+   * 5-step onboarding flow:
+   * 1. Welcome & Name
+   * 2. Goal selection (max 3)
+   * 3. Context selection (max 3)
+   * 4. Time configuration
+   * 5. Summary + ICS download + first test
+   */
+  import { goto, invalidateAll } from '$app/navigation';
+  import { onboarding } from './onboardingState';
+  import { currentUser } from '$lib/stores/auth.store';
+  import { ProfileService } from '$lib/services/profile.service';
+  import { 
+    USER_GOAL_LABELS, 
+    CONTEXT_SUGGESTIONS, 
+    TIME_SLOT_OPTIONS,
+    type UserGoal,
+    type TimeSlot,
+    type TrackingContext
+  } from './onboardingTypes';
+  
+  type Step = 1 | 2 | 3 | 4 | 5;
+  
+  let currentStep = $state<Step>(1);
+  let userName = $state('');
+  let selectedGoals = $state<UserGoal[]>([]);
+  let contexts = $state<TrackingContext[]>([]);
+  let customContextLabel = $state('');
+  let isDownloadingICS = $state(false);
+  let isSaving = $state(false);
+  
+  // Step 2: Toggle goal selection
+  function toggleGoal(goal: UserGoal) {
+    const index = selectedGoals.indexOf(goal);
+    if (index > -1) {
+      selectedGoals = selectedGoals.filter(g => g !== goal);
+    } else {
+      if (selectedGoals.length >= 3) {
+        return; // Max 3 goals
+      }
+      selectedGoals = [...selectedGoals, goal];
+    }
+  }
+  
+  // Step 3: Add predefined context
+  function addPredefinedContext(label: string) {
+    if (contexts.length >= 3) return;
+    
+    const newContext: TrackingContext = {
+      id: crypto.randomUUID(),
+      label,
+      slot: '08:00', // Default morning
+      fixedTime: '08:00'
+    };
+    contexts = [...contexts, newContext];
+  }
+  
+  // Step 3: Add custom context
+  function addCustomContext() {
+    if (!customContextLabel.trim() || contexts.length >= 3) return;
+    
+    const newContext: TrackingContext = {
+      id: crypto.randomUUID(),
+      label: customContextLabel.trim(),
+      slot: '08:00', // Default morning
+      fixedTime: '08:00'
+    };
+    contexts = [...contexts, newContext];
+    customContextLabel = '';
+  }
+  
+  // Step 3: Remove context
+  function removeContext(id: string) {
+    contexts = contexts.filter(c => c.id !== id);
+  }
+  
+  // Step 4: Update context time slot
+  function updateContextSlot(id: string, slot: TimeSlot) {
+    contexts = contexts.map(ctx => 
+      ctx.id === id 
+        ? { ...ctx, slot, fixedTime: slot }
+        : ctx
+    );
+  }
+  
+  // Navigation
+  function nextStep() {
+    if (currentStep === 1 && !userName.trim()) {
+      alert('Bitte gib deinen Namen ein.');
+      return;
+    }
+    if (currentStep === 2 && selectedGoals.length === 0) {
+      alert('Bitte wähle mindestens ein Ziel aus.');
+      return;
+    }
+    if (currentStep === 3 && contexts.length === 0) {
+      alert('Bitte füge mindestens einen Kontext hinzu.');
+      return;
+    }
+    if (currentStep < 5) {
+      currentStep = (currentStep + 1) as Step;
+    }
+  }
+  
+  function prevStep() {
+    if (currentStep > 1) {
+      currentStep = (currentStep - 1) as Step;
+    }
+  }
+  
+  // Step 4: Download ICS
+  async function downloadICS() {
+    if (contexts.length === 0) {
+      alert('Keine Kontexte zum Exportieren vorhanden.');
+      return;
+    }
+    
+    isDownloadingICS = true;
+    try {
+      const response = await fetch('/api/ics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ trackingContexts: contexts })
+      });
+      
+      if (!response.ok) {
+        throw new Error('ICS generation failed');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'brainscore-reminders.ics';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Failed to download ICS:', error);
+      alert('Fehler beim Erstellen der Kalender-Datei.');
+    } finally {
+      isDownloadingICS = false;
+    }
+  }
+  
+  // Step 4: Complete onboarding and start first test
+  async function startFirstTest() {
+    if (!$currentUser) {
+      alert('Du musst eingeloggt sein, um fortzufahren.');
+      goto('/auth');
+      return;
+    }
+    
+    isSaving = true;
+    try {
+      // Save profile (name + primary goal)
+      const primaryGoal = selectedGoals[0] || 'unsure';
+      const { success, error } = await ProfileService.upsertProfile(
+        $currentUser.id,
+        userName.trim(),
+        primaryGoal
+      );
+      
+      if (!success) {
+        throw new Error(error || 'Profile save failed');
+      }
+      
+      // Save to onboarding store (for future use)
+      onboarding.setGoals(selectedGoals);
+      contexts.forEach(ctx => onboarding.addContext(ctx));
+      onboarding.complete();
+      
+      // Invalidate server cache to reload profile
+      await invalidateAll();
+      
+      console.log('✅ Onboarding completed, starting first test...');
+      
+      // Navigate to test
+      goto('/test');
+    } catch (err) {
+      console.error('Failed to complete onboarding:', err);
+      alert('Fehler beim Speichern. Bitte versuche es erneut.');
+    } finally {
+      isSaving = false;
+    }
+  }
+</script>
+
+<div class="min-h-screen bg-white flex items-center justify-center px-4 pwa-safe-screen">
+  <div class="w-full max-w-2xl">
+    
+    <!-- Progress Indicator -->
+    <div class="mb-8">
+      <div class="flex items-center justify-center gap-2 mb-4">
+        {#each [1, 2, 3, 4, 5] as step}
+          <div class="w-2 h-2 rounded-full {currentStep === step ? 'bg-black' : currentStep > step ? 'bg-gray-400' : 'bg-gray-200'}"></div>
+          {#if step < 5}
+            <div class="w-8 h-0.5 bg-gray-300"></div>
+          {/if}
+        {/each}
+      </div>
+      <p class="text-center text-sm text-gray-500">
+        Schritt {currentStep} von 5
+      </p>
+    </div>
+
+    <!-- Card Container -->
+    <div class="card bg-base-200 shadow-lg border border-gray-200">
+      <div class="card-body">
+        
+        <!-- Step 1: Welcome & Name -->
+        {#if currentStep === 1}
+          <div class="space-y-6">
+            <div class="text-center">
+              <h1 class="text-3xl font-bold mb-2">Willkommen bei BrainrotAI</h1>
+              <p class="text-gray-600">
+                BrainrotAI hilft dir, deine Aufmerksamkeit zu verstehen und gezielt zu verbessern – 
+                in deinem Alltag, ohne aufwendige Diagnostik.
+              </p>
+            </div>
+            <div class="text-sm text-gray-500 text-center">
+              ⏱️ Dauert nur 2–3 Minuten
+            </div>
+            <div>
+              <label class="block text-sm font-semibold mb-2">
+                Wie sollen wir dich nennen?
+              </label>
+              <input
+                type="text"
+                bind:value={userName}
+                placeholder="Dein Name"
+                class="input input-bordered w-full"
+                autofocus
+                onkeydown={(e) => e.key === 'Enter' && nextStep()}
+              />
+            </div>
+            <button 
+              onclick={nextStep} 
+              class="btn btn-primary btn-lg w-full"
+              disabled={!userName.trim()}
+            >
+              Loslegen
+            </button>
+          </div>
+        {/if}
+        
+        <!-- Step 2: Goals Selection -->
+        {#if currentStep === 2}
+          <div class="space-y-6">
+            <div>
+              <h2 class="text-2xl font-bold mb-2">Deine Ziele</h2>
+              <p class="text-gray-600 text-sm">
+                Wähle bis zu 3 Ziele aus, die für dich wichtig sind.
+              </p>
+            </div>
+            
+            <div class="space-y-3">
+              {#each Object.entries(USER_GOAL_LABELS) as [goal, { label, description }]}
+                <button
+                  onclick={() => toggleGoal(goal as UserGoal)}
+                  class="w-full text-left p-4 rounded-lg border-2 transition-colors {
+                    selectedGoals.includes(goal as UserGoal)
+                      ? 'border-black bg-black text-white'
+                      : 'border-gray-300 hover:border-gray-400'
+                  }"
+                >
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <div class="font-semibold">{label}</div>
+                      <div class="text-sm opacity-80">{description}</div>
+                    </div>
+                    {#if selectedGoals.includes(goal as UserGoal)}
+                      <span class="text-2xl">✓</span>
+                    {/if}
+                  </div>
+                </button>
+              {/each}
+            </div>
+            
+            <div class="text-sm text-gray-500 text-center">
+              {selectedGoals.length} von 3 ausgewählt
+            </div>
+            
+            <div class="flex gap-3">
+              <button onclick={prevStep} class="btn btn-ghost flex-1">
+                Zurück
+              </button>
+              <button 
+                onclick={nextStep} 
+                class="btn btn-primary flex-1"
+                disabled={selectedGoals.length === 0}
+              >
+                Weiter
+              </button>
+            </div>
+          </div>
+        {/if}
+        
+        <!-- Step 3: Contexts & Time Slots -->
+        {#if currentStep === 3}
+          <div class="space-y-6">
+            <div>
+              <h2 class="text-2xl font-bold mb-2">Check-in-Kontexte</h2>
+              <p class="text-gray-600 text-sm">
+                Wann möchtest du deine Aufmerksamkeit testen? Wähle bis zu 3 Kontexte.
+              </p>
+            </div>
+            
+            <!-- Predefined Suggestions -->
+            {#if contexts.length < 3}
+              <div>
+                <div class="text-sm font-semibold mb-2">Vorschläge:</div>
+                <div class="flex flex-wrap gap-2">
+                  {#each CONTEXT_SUGGESTIONS as suggestion}
+                    {#if !contexts.some(c => c.label === suggestion)}
+                      <button
+                        onclick={() => addPredefinedContext(suggestion)}
+                        class="btn btn-sm btn-outline"
+                      >
+                        + {suggestion}
+                      </button>
+                    {/if}
+                  {/each}
+                </div>
+              </div>
+            {/if}
+            
+            <!-- Custom Context Input -->
+            {#if contexts.length < 3}
+              <div>
+                <div class="text-sm font-semibold mb-2">Eigener Kontext:</div>
+                <div class="flex gap-2">
+                  <input
+                    type="text"
+                    bind:value={customContextLabel}
+                    placeholder="z.B. 'Vor dem Joggen'"
+                    class="input input-bordered flex-1"
+                    onkeydown={(e) => e.key === 'Enter' && addCustomContext()}
+                  />
+                  <button
+                    onclick={addCustomContext}
+                    class="btn btn-primary"
+                    disabled={!customContextLabel.trim()}
+                  >
+                    Hinzufügen
+                  </button>
+                </div>
+              </div>
+            {/if}
+            
+            <!-- Selected Contexts -->
+            {#if contexts.length > 0}
+              <div>
+                <div class="text-sm font-semibold mb-2">Deine Kontexte:</div>
+                <div class="space-y-3">
+                  {#each contexts as context}
+                    <div class="p-4 bg-white rounded-lg border border-gray-300">
+                      <div class="flex justify-between items-start mb-3">
+                        <div class="font-semibold">{context.label}</div>
+                        <button
+                          onclick={() => removeContext(context.id)}
+                          class="text-gray-500 hover:text-red-600"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      <div>
+                        <div class="text-xs text-gray-600 mb-1">Tageszeit:</div>
+                        <div class="flex gap-2">
+                          {#each Object.entries(TIME_SLOT_LABELS) as [slot, label]}
+                            <button
+                              onclick={() => updateContextSlot(context.id, slot as TimeSlot)}
+                              class="btn btn-sm {
+                                context.slot === slot
+                                  ? 'btn-primary'
+                                  : 'btn-outline'
+                              }"
+                            >
+                              {label} ({TIME_SLOT_MAP[slot as TimeSlot]})
+                            </button>
+                          {/each}
+                        </div>
+                      </div>
+                    </div>
+                  {/each}
+                </div>
+              </div>
+            {/if}
+            
+            <div class="text-sm text-gray-500 text-center">
+              {contexts.length} von 3 Kontexten konfiguriert
+            </div>
+            
+            <div class="flex gap-3">
+              <button onclick={prevStep} class="btn btn-ghost flex-1">
+                Zurück
+              </button>
+              <button 
+                onclick={nextStep} 
+                class="btn btn-primary flex-1"
+                disabled={contexts.length === 0}
+              >
+                Weiter
+              </button>
+            </div>
+          </div>
+        {/if}
+        
+        <!-- Step 4: Summary & Actions -->
+        {#if currentStep === 4}
+          <div class="space-y-6">
+            <div>
+              <h2 class="text-2xl font-bold mb-2">Alles bereit! 🎉</h2>
+              <p class="text-gray-600 text-sm">
+                Du hast deine Ziele und Check-in-Zeiten konfiguriert.
+              </p>
+            </div>
+            
+            <!-- Summary -->
+            <div class="space-y-4">
+              <div class="p-4 bg-white rounded-lg border border-gray-300">
+                <div class="text-sm font-semibold mb-2">Deine Ziele:</div>
+                <div class="flex flex-wrap gap-2">
+                  {#each selectedGoals as goal}
+                    <span class="badge badge-lg">
+                      {USER_GOAL_LABELS[goal].label}
+                    </span>
+                  {/each}
+                </div>
+              </div>
+              
+              <div class="p-4 bg-white rounded-lg border border-gray-300">
+                <div class="text-sm font-semibold mb-2">Deine Check-ins:</div>
+                <div class="space-y-2">
+                  {#each contexts as context}
+                    <div class="flex justify-between text-sm">
+                      <span>{context.label}</span>
+                      <span class="text-gray-600">
+                        {TIME_SLOT_LABELS[context.slot]} ({context.fixedTime})
+                      </span>
+                    </div>
+                  {/each}
+                </div>
+              </div>
+            </div>
+            
+            <!-- Actions -->
+            <div class="space-y-3">
+              <button
+                onclick={downloadICS}
+                class="btn btn-outline w-full"
+                disabled={isDownloadingICS}
+              >
+                {#if isDownloadingICS}
+                  <span class="loading loading-spinner"></span>
+                  Erstelle Kalender...
+                {:else}
+                  📅 Kalender-Reminder hinzufügen
+                {/if}
+              </button>
+              
+              <button
+                onclick={startFirstTest}
+                class="btn btn-primary btn-lg w-full"
+              >
+                🎯 Ersten Test starten
+              </button>
+            </div>
+            
+            <div class="text-center">
+              <button onclick={prevStep} class="btn btn-ghost btn-sm">
+                ← Zurück
+              </button>
+            </div>
+          </div>
+        {/if}
+
+      </div>
+    </div>
+
+  </div>
+</div>

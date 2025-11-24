@@ -4,7 +4,14 @@
    * Displays a timeline/list of recent SART test sessions
    */
   import BaseCard from '../base/BaseCard.svelte';
-  import type { SessionHistoryItem } from '$lib/services/dashboard.service';
+  
+  interface SessionHistoryItem {
+    id: string;
+    createdAt: Date;
+    score: number;
+    commissionErrors: number;
+    omissionErrors: number;
+  }
   
   interface Props {
     sessions: SessionHistoryItem[];

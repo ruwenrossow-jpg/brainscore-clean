@@ -21,6 +21,7 @@ import {
   type TrialResult,
   type BrainScoreResult 
 } from '$features/brainrotTest/brainScoreV1';
+import { syncDailyScoreForDate } from './dailyScore.service';
 
 export class SartService {
   /**
@@ -101,7 +102,17 @@ export class SartService {
         .single();
 
       if (error) throw error;
-      return (data as any)?.id || null;
+      
+      const sessionId = (data as any)?.id || null;
+      
+      // 🔄 Auto-sync DailyScore for today after test completion
+      if (sessionId && userId) {
+        const today = new Date().toISOString().split('T')[0];
+        await syncDailyScoreForDate(userId, today);
+        console.log('✅ DailyScore synced for today:', today);
+      }
+      
+      return sessionId;
     } catch (error) {
       console.error('❌ Error saving SART session:', error);
       return null;
