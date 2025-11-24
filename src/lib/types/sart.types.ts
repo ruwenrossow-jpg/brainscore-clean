@@ -29,6 +29,10 @@ export interface SartMetrics {
   meanReactionTimeMs: number;
   sdReactionTimeMs: number;
   score: number;                // 0-100
+  
+  // Validity flags (since 2025-01)
+  isValid: boolean;             // false if test is likely spam/invalid
+  invalidReason?: 'low_valid_ratio' | 'too_many_ultrafast' | 'mixed';
 }
 
 // Datenbank-Modelle

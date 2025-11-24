@@ -29,6 +29,27 @@
   <div class="card-modern w-full max-w-lg animate-slideUp">
     <div class="p-8 items-center text-center">
       
+      <!-- Validity Warning (if test is invalid) -->
+      {#if !metrics.isValid}
+        <div class="w-full mb-6 p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 text-left animate-fadeIn">
+          <div class="flex items-start gap-3">
+            <span class="material-symbols-outlined text-2xl text-amber-600 flex-shrink-0">info</span>
+            <div>
+              <div class="font-black text-amber-900 mb-1">Test möglicherweise nicht repräsentativ</div>
+              <p class="text-sm text-amber-800">
+                {#if metrics.invalidReason === 'low_valid_ratio'}
+                  Zu viele unterbrochene Trials. Stelle sicher, dass du den Test ohne Unterbrechungen durchführst.
+                {:else if metrics.invalidReason === 'too_many_ultrafast'}
+                  Sehr schnelle Reaktionen bei hoher Fehlerquote deuten auf Spam-Klicken hin. Versuche, konzentriert auf die Aufgabe zu reagieren.
+                {:else}
+                  Mehrere Qualitätsprobleme erkannt. Wir empfehlen, den Test in ruhiger Umgebung zu wiederholen.
+                {/if}
+              </p>
+            </div>
+          </div>
+        </div>
+      {/if}
+      
       <!-- Hero Score Display -->
       <div class="w-full mb-10">
         <p class="text-sm text-gray-500 uppercase tracking-wider mb-4 font-bold">Dein BrainScore</p>

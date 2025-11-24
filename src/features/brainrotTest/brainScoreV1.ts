@@ -5,13 +5,15 @@
  * docs/brainrot-sart-short-v1_brainscore-v1.md
  * 
  * BrainScore v1 is a weighted composite score (0-100) combining:
- * - AccuracyScore (40%): Based on commission and omission errors
- * - SpeedScore (30%): Based on mean Go reaction time with speed-accuracy trade-off
- * - ConsistencyScore (20%): Based on reaction time variability (SD)
+ * - AccuracyScore (30%): Based on commission and omission errors
+ * - SpeedScore (35%): Based on mean Go reaction time with speed-accuracy trade-off
+ * - ConsistencyScore (25%): Based on reaction time variability (SD)
  * - DisciplineScore (10%): Based on protocol quality (valid trial ratio)
  * 
- * Formula:
- * BrainScore_v1 = 0.40 × AccuracyScore + 0.30 × SpeedScore + 0.20 × ConsistencyScore + 0.10 × DisciplineScore
+ * Formula (Updated 2025-01):
+ * BrainScore_v1 = 0.30 × AccuracyScore + 0.35 × SpeedScore + 0.25 × ConsistencyScore + 0.10 × DisciplineScore
+ * 
+ * Changes from initial version: RT/Speed more important, Accuracy slightly reduced
  * 
  * @see docs/brainrot-sart-short-v1_brainscore-v1.md Section 6
  */
@@ -189,7 +191,9 @@ export function calculateDisciplineScore(validTrialRatio: number): number {
 /**
  * Calculates the complete BrainScore v1 from raw metrics
  * 
- * BrainScore v1 = 0.40 × AccuracyScore + 0.30 × SpeedScore + 0.20 × ConsistencyScore + 0.10 × DisciplineScore
+ * BrainScore v1 = 0.30 × AccuracyScore + 0.35 × SpeedScore + 0.25 × ConsistencyScore + 0.10 × DisciplineScore
+ * 
+ * Updated weighting (2025-01): RT/Speed more important, Accuracy slightly reduced
  * 
  * @param rawMetrics The aggregated metrics from the test session
  * @returns Complete BrainScore result with sub-scores and composite score
@@ -210,9 +214,9 @@ export function calculateBrainScore(rawMetrics: RawMetrics): BrainScoreResult {
 	const consistencyScore = calculateConsistencyScore(rawMetrics.goRtSD);
 	const disciplineScore = calculateDisciplineScore(rawMetrics.validTrialRatio);
 
-	// Calculate weighted composite score
+	// Calculate weighted composite score (updated weights 2025-01)
 	const brainScore =
-		0.4 * accuracyScore + 0.3 * speedScore + 0.2 * consistencyScore + 0.1 * disciplineScore;
+		0.3 * accuracyScore + 0.35 * speedScore + 0.25 * consistencyScore + 0.1 * disciplineScore;
 
 	return {
 		brainScore: Math.round(brainScore * 10) / 10, // Round to 1 decimal place
@@ -288,4 +292,48 @@ export function computeRawMetrics(trials: TrialResult[]): RawMetrics {
 		goRtSD,
 		validTrialRatio
 	};
+}
+
+/**
+ * Validity assessment result
+ */
+export interface ValidityResult {
+	isValid: boolean;
+	reason?: 'low_valid_ratio' | 'too_many_ultrafast' | 'mixed';
+}
+
+/**
+ * Assesses whether a test session is valid or likely spam/invalid
+ * 
+ * Criteria:
+ * 1. Protocol quality: validTrialRatio < 0.8 suggests distractions/technical issues
+ * 2. Ultra-fast spam clicking: meanGoRT < 350ms + high error rate (>30%)
+ * 
+ * @param raw Raw metrics from the test session
+ * @returns Validity result with isValid flag and optional reason
+ */
+export function assessValidity(raw: RawMetrics): ValidityResult {
+	const reasons: Array<'low_valid_ratio' | 'too_many_ultrafast'> = [];
+
+	// 1. Protocol quality check
+	if (raw.validTrialRatio < 0.8) {
+		reasons.push('low_valid_ratio');
+	}
+
+	// 2. Ultra-fast spam clicking check
+	// If average RT is very fast (<350ms) AND error rate is high (>30%),
+	// this suggests mindless spam-clicking rather than genuine testing
+	const totalErrorRate = (raw.commissionErrorRate + raw.omissionErrorRate) / 2;
+	if (raw.meanGoRT < 350 && totalErrorRate > 0.3) {
+		reasons.push('too_many_ultrafast');
+	}
+
+	// Return validity result
+	if (reasons.length === 0) {
+		return { isValid: true };
+	}
+	if (reasons.length === 1) {
+		return { isValid: false, reason: reasons[0] };
+	}
+	return { isValid: false, reason: 'mixed' };
 }

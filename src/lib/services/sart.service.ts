@@ -18,6 +18,7 @@ import {
 import { 
   computeRawMetrics, 
   calculateBrainScore,
+  assessValidity,
   type TrialResult,
   type BrainScoreResult 
 } from '$features/brainrotTest/brainScoreV1';
@@ -45,7 +46,7 @@ export class SartService {
 
   /**
    * Computes BrainScore v1 metrics from completed trials
-   * Uses the new scoring formula: 40% Accuracy + 30% Speed + 20% Consistency + 10% Discipline
+   * Uses updated scoring formula (2025-01): 30% Accuracy + 35% Speed + 25% Consistency + 10% Discipline
    * 
    * @see docs/brainrot-sart-short-v1_brainscore-v1.md Section 6
    */
@@ -59,11 +60,12 @@ export class SartService {
       reactionTimeMs: trial.reactionTimeMs,
     }));
 
-    // Compute raw metrics and BrainScore v1
+    // Compute raw metrics, validity, and BrainScore v1
     const rawMetrics = computeRawMetrics(trialResults);
+    const validity = assessValidity(rawMetrics);
     const brainScoreResult = calculateBrainScore(rawMetrics);
 
-    // Return in legacy format for backward compatibility
+    // Return in legacy format for backward compatibility + validity flags
     return {
       commissionErrors: Math.round(rawMetrics.commissionErrorRate * rawMetrics.nNoGo),
       omissionErrors: Math.round(rawMetrics.omissionErrorRate * rawMetrics.nGo),
@@ -72,6 +74,8 @@ export class SartService {
       meanReactionTimeMs: Math.round(rawMetrics.meanGoRT),
       sdReactionTimeMs: Math.round(rawMetrics.goRtSD),
       score: Math.round(brainScoreResult.brainScore),
+      isValid: validity.isValid,
+      invalidReason: validity.reason
     };
   }
 
