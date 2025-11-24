@@ -77,19 +77,26 @@ export class SartService {
 
   /**
    * Speichert SART-Session in Supabase
+   * ⚠️ Erfordert userId - anonyme Sessions werden nicht mehr unterstützt
    * @param metrics Test-Ergebnisse
-   * @param userId Optional: User-ID für authentifizierte Sessions (defensiv: null wenn nicht eingeloggt)
+   * @param userId User-ID (erforderlich)
    * @returns Session-ID oder null bei Fehler
    */
   static async saveSartSession(
     metrics: SartMetrics, 
     userId?: string | null
   ): Promise<string | null> {
+    // Auth-Check: Keine anonymen Sessions mehr
+    if (!userId) {
+      console.error('❌ Cannot save SART session: userId is required');
+      return null;
+    }
+    
     try {
       const { data, error } = await supabase
         .from('sart_sessions')
         .insert({
-          user_id: userId || null, // ✅ Defensiv: null wenn keine Session
+          user_id: userId,
           commission_errors: metrics.commissionErrors,
           omission_errors: metrics.omissionErrors,
           go_count: metrics.goTrialsCount,

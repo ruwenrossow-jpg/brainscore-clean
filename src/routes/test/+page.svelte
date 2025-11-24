@@ -2,8 +2,11 @@
   /**
    * Test Flow - State Machine
    * Orchestriert den gesamten SART-Test-Ablauf + Digital Check-in
+   * 
+   * ⚠️ Auth-Guard: Nur für eingeloggte User zugänglich
    */
   
+  import { onMount } from 'svelte';
   import type { TestStep } from '$lib/types/sart.types';
   import type { SartMetrics } from '$lib/types/sart.types';
   
@@ -12,6 +15,7 @@
   import SartResult from '$lib/components/sart/SartResult.svelte';
   import DigitalCheckIn from '$features/digitalLog/DigitalCheckIn.svelte';
   import { goto } from '$app/navigation';
+  import { isAuthenticated } from '$lib/stores/auth.store';
 
   type ExtendedTestStep = TestStep | 'digital-checkin';
   
@@ -19,6 +23,21 @@
   let metrics: SartMetrics | null = $state(null);
   let sessionId: string | null = $state(null);
   let showDigitalCheckIn = $state(false);
+  let authCheckComplete = $state(false);
+  
+  // Auth-Guard: Redirect wenn nicht eingeloggt
+  onMount(async () => {
+    // Wait for auth state to initialize
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    if (!$isAuthenticated) {
+      console.log('⚠️ Test requires authentication, redirecting to /auth');
+      goto('/auth');
+      return;
+    }
+    
+    authCheckComplete = true;
+  });
 
   function handleTestComplete(data: { metrics: SartMetrics; sessionId: string | null }) {
     metrics = data.metrics;
@@ -44,7 +63,12 @@
 
 <div class="min-h-screen bg-gradient-to-b from-white to-gray-50 flex items-center justify-center px-4 pwa-safe-screen">
   
-  {#if step === 'instructions'}
+  {#if !authCheckComplete}
+    <div class="flex flex-col items-center gap-4">
+      <div class="loading loading-spinner loading-lg text-brand-purple"></div>
+      <p class="text-gray-600">Prüfe Authentifizierung...</p>
+    </div>
+  {:else if step === 'instructions'}
     <SartInstructions onStart={() => (step = 'test')} />
     
   {:else if step === 'test'}

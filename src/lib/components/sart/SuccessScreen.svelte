@@ -18,8 +18,8 @@
 
     <div class="bg-white p-4 rounded-lg border border-gray-300 w-full">
       <p class="text-sm text-gray-700">
-        Deine Daten wurden <strong>anonym gespeichert</strong> und helfen uns, 
-        die Auswirkungen von Bildschirmzeit auf kognitive Performance besser zu verstehen.
+        Deine Daten wurden <strong>sicher gespeichert</strong> und helfen dir, 
+        deine kognitive Performance zu verstehen und zu verbessern.
       </p>
     </div>
 

@@ -24,7 +24,8 @@
     // Wait for auth state to be ready
     await new Promise(resolve => setTimeout(resolve, 100));
     
-    if (!$auth.user) {
+    if (!$isAuthenticated || !$auth.user) {
+      console.log('⚠️ Dashboard requires authentication, redirecting to /auth');
       goto('/auth');
       return;
     }

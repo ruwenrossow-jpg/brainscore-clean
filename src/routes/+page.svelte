@@ -61,26 +61,26 @@
 
       <div class="flex flex-col justify-center pt-4 space-y-4">
         {#if $isAuthenticated}
-          <button onclick={() => goto('/dashboard')} class="btn-gradient-primary w-full text-lg font-bold">
-            Zum Dashboard
+          <button onclick={() => goto('/test')} class="btn-gradient-primary w-full text-lg font-bold">
+            Test starten
             <span class="ml-2">→</span>
+          </button>
+          <button onclick={() => goto('/dashboard')} class="btn-secondary w-full text-base">
+            Zum Dashboard
           </button>
         {:else}
           <button onclick={() => goto('/auth')} class="btn-gradient-primary w-full text-lg font-bold">
             Jetzt starten
             <span class="ml-2">→</span>
           </button>
-          <button onclick={() => goto('/test')} class="btn-secondary w-full text-base">
-            Ohne Anmeldung testen
-          </button>
         {/if}
       </div>
 
       <p class="text-xs text-gray-500 text-center mt-4">
         {#if $isAuthenticated}
-          Deine Sessions werden gespeichert und sind im Dashboard verfügbar
+          Deine Tests werden automatisch gespeichert und sind jederzeit im Dashboard verfügbar
         {:else}
-          Registrierung empfohlen für Verlauf · Anonyme Tests möglich
+          Erstelle einen Account, um deine Fortschritte zu tracken
         {/if}
       </p>
     </div>
