@@ -48,6 +48,14 @@
         return;
       }
       
+      // FIX: Debug-Logging für empfangene Daten
+      console.log('📊 Dashboard received data:', {
+        todayScore: data.today.score,
+        todayTestCount: data.today.testCount,
+        twoWeekTrendLength: data.twoWeekTrend.length,
+        firstTrendEntry: data.twoWeekTrend.length > 0 ? data.twoWeekTrend[0] : null
+      });
+      
       dashboardData = data;
     } catch (err) {
       console.error('Dashboard error:', err);

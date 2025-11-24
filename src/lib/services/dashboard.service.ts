@@ -51,6 +51,18 @@ export async function getDashboardData(
       STATS_WINDOWS.twoWeeks
     );
     
+    // FIX: Debug-Logging für Datenpfad-Validierung
+    console.log('📊 getDashboardData - twoWeekTrend:', {
+      totalDailyScores: dailyScores.length,
+      twoWeekTrendLength: twoWeekTrend.length,
+      firstTrendScore: twoWeekTrend.length > 0 ? {
+        date: twoWeekTrend[0].date,
+        dailyScore: twoWeekTrend[0].dailyScore,
+        testCount: twoWeekTrend[0].testCount,
+        hasDailyScore: 'dailyScore' in twoWeekTrend[0]
+      } : 'no data'
+    });
+    
     const dashboardData: DashboardData = {
       today: {
         score: todayScore?.dailyScore || null,

@@ -14,6 +14,16 @@
   
   let { dailyScores, onSelectDay }: Props = $props();
   
+  // FIX 1: Debug-Logging für Datenpfad-Validierung
+  $effect(() => {
+    console.log('📊 DailyTrendChart received dailyScores:', dailyScores);
+    if (dailyScores.length > 0) {
+      console.log('📊 First score object:', dailyScores[0]);
+      console.log('📊 Has dailyScore?', 'dailyScore' in dailyScores[0]);
+      console.log('📊 dailyScore value:', dailyScores[0].dailyScore);
+    }
+  });
+  
   function handleDayClick(date: string) {
     if (onSelectDay) {
       onSelectDay(date);
@@ -23,6 +33,23 @@
   function formatDate(dateStr: string): string {
     const date = new Date(dateStr);
     return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+  }
+  
+  // FIX 2: Defensive Helper - extrahiert Score auch bei snake_case
+  function getScore(day: DailyScore): number {
+    // Prüfe camelCase (korrekt)
+    if (typeof day.dailyScore === 'number') {
+      return day.dailyScore;
+    }
+    // Fallback: Prüfe snake_case (DB-Format)
+    const anyDay = day as any;
+    if (typeof anyDay.daily_score === 'number') {
+      console.warn('⚠️ Found daily_score (snake_case) instead of dailyScore (camelCase)');
+      return anyDay.daily_score;
+    }
+    // Fallback: 0
+    console.error('❌ No valid score found in:', day);
+    return 0;
   }
   
   function getBarColor(score: number): string {
@@ -62,16 +89,18 @@
         
         <!-- Bars -->
         {#each dailyScores.slice().reverse() as day, index}
+          {@const score = getScore(day)}
+          {@const barHeight = Math.max(score, 8)}
           <button
             onclick={() => handleDayClick(day.date)}
             class="flex-1 flex flex-col items-center group cursor-pointer min-w-0 relative z-10 animate-fadeIn"
             style="animation-delay: {index * 0.05}s;"
-            title="{formatDate(day.date)}: {day.dailyScore} Punkte ({day.testCount} {day.testCount === 1 ? 'Test' : 'Tests'})"
+            title="{formatDate(day.date)}: {score} Punkte ({day.testCount} {day.testCount === 1 ? 'Test' : 'Tests'})"
           >
-            <!-- Bar -->
+            <!-- Bar - FIX 3: Defensive Rendering mit Min-Height -->
             <div 
-              class="w-full {getBarColor(day.dailyScore)} rounded-t-lg transition-all duration-300 hover:opacity-90 shadow-sm group-hover:shadow-md"
-              style="height: {Math.max(day.dailyScore, 8)}%;"
+              class="w-full {getBarColor(score)} rounded-t-lg transition-all duration-300 hover:opacity-90 shadow-sm group-hover:shadow-md"
+              style="height: {barHeight}%; min-height: 8px;"
             ></div>
             
             <!-- Date Label -->

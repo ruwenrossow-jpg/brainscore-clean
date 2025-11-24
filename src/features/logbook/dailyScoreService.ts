@@ -155,6 +155,7 @@ function calculateMedian(values: number[]): number {
 
 /**
  * Filtert DailyScores für ein bestimmtes Zeitfenster
+ * FIX: Validierung und Debug-Logging
  */
 export function filterDailyScoresByWindow(
   dailyScores: DailyScore[],
@@ -165,5 +166,25 @@ export function filterDailyScoresByWindow(
   cutoffDate.setDate(cutoffDate.getDate() - days);
   const cutoffStr = cutoffDate.toISOString().split('T')[0];
   
-  return dailyScores.filter(ds => ds.date >= cutoffStr);
+  const filtered = dailyScores.filter(ds => {
+    const isValid = ds.date >= cutoffStr && 
+                    typeof ds.dailyScore === 'number' && 
+                    !isNaN(ds.dailyScore);
+    
+    if (!isValid) {
+      console.warn('⚠️ Filtered out invalid DailyScore:', ds);
+    }
+    
+    return isValid;
+  });
+  
+  // FIX: Debug-Logging
+  console.log(`📊 filterDailyScoresByWindow (${days} days):`, {
+    input: dailyScores.length,
+    output: filtered.length,
+    cutoffDate: cutoffStr,
+    firstScore: filtered.length > 0 ? filtered[0] : null
+  });
+  
+  return filtered;
 }

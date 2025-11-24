@@ -8,6 +8,8 @@
    * 3. Context + Time selection (max 3, combined)
    * 4. Summary + ICS download + first test
    */
+  import { onMount } from 'svelte';
+  import { tick } from 'svelte';
   import { goto, invalidateAll } from '$app/navigation';
   import { onboarding } from './onboardingState';
   import { currentUser } from '$lib/stores/auth.store';
@@ -28,6 +30,18 @@
   let isDownloadingICS = $state(false);
   let isSaving = $state(false);
   
+  // Disable browser scroll restoration for smooth step transitions
+  onMount(() => {
+    if (typeof window !== 'undefined' && 'scrollRestoration' in history) {
+      const originalRestoration = history.scrollRestoration;
+      history.scrollRestoration = 'manual';
+      
+      return () => {
+        history.scrollRestoration = originalRestoration;
+      };
+    }
+  });
+  
   // Step 2: Toggle goal selection
   function toggleGoal(goal: UserGoal) {
     const index = selectedGoals.indexOf(goal);
@@ -46,8 +60,8 @@
     contexts = newContexts;
   }
   
-  // Navigation
-  function nextStep() {
+  // Navigation with scroll-to-top
+  async function nextStep() {
     if (currentStep === 1 && !userName.trim()) {
       alert('Bitte gib deinen Namen ein.');
       return;
@@ -62,12 +76,18 @@
     }
     if (currentStep < 4) {
       currentStep = (currentStep + 1) as Step;
+      // Wait for DOM update, then scroll to top
+      await tick();
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
     }
   }
   
-  function prevStep() {
+  async function prevStep() {
     if (currentStep > 1) {
       currentStep = (currentStep - 1) as Step;
+      // Wait for DOM update, then scroll to top
+      await tick();
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
     }
   }
   
@@ -109,6 +129,24 @@
   
   // Step 4: Complete onboarding and start first test
   async function startFirstTest() {
+    await completeOnboarding();
+    if (isSaving) return; // Fehler beim Speichern
+    
+    console.log('✅ Onboarding completed, starting first test...');
+    goto('/test');
+  }
+  
+  // Step 4: Complete onboarding and go to dashboard
+  async function goToDashboard() {
+    await completeOnboarding();
+    if (isSaving) return; // Fehler beim Speichern
+    
+    console.log('✅ Onboarding completed, redirecting to dashboard...');
+    goto('/dashboard');
+  }
+  
+  // Shared: Save onboarding data
+  async function completeOnboarding() {
     if (!$currentUser) {
       alert('Du musst eingeloggt sein, um fortzufahren.');
       goto('/auth');
@@ -136,11 +174,6 @@
       
       // Invalidate server cache to reload profile
       await invalidateAll();
-      
-      console.log('✅ Onboarding completed, starting first test...');
-      
-      // Navigate to test
-      goto('/test');
     } catch (err) {
       console.error('Failed to complete onboarding:', err);
       alert('Fehler beim Speichern. Bitte versuche es erneut.');
@@ -351,6 +384,16 @@
                   <span class="material-symbols-outlined mr-2">rocket_launch</span>
                   Ersten Test starten
                 {/if}
+              </button>
+              
+              <!-- Skip Option: Direct to Dashboard -->
+              <button
+                onclick={goToDashboard}
+                class="w-full text-sm text-gray-600 hover:text-brand-purple transition-colors py-2"
+                disabled={isSaving}
+              >
+                Später – erst mal umsehen
+                <span class="ml-1">→</span>
               </button>
             </div>
             
