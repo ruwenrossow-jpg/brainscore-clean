@@ -14,14 +14,20 @@
   
   let { dailyScores, onSelectDay }: Props = $props();
   
-  // FIX 1: Debug-Logging für Datenpfad-Validierung
+  // FIX 1: Defensive Filtering für valide Scores
+  let validScores = $derived(
+    (dailyScores ?? [])
+      .filter((d) => typeof d.dailyScore === 'number' && !Number.isNaN(d.dailyScore))
+      .slice()
+      .sort((a, b) => a.date.localeCompare(b.date))
+  );
+
+  let hasData = $derived(validScores.length > 0);
+  
+  // Debug-Logging
   $effect(() => {
-    console.log('📊 DailyTrendChart received dailyScores:', dailyScores);
-    if (dailyScores.length > 0) {
-      console.log('📊 First score object:', dailyScores[0]);
-      console.log('📊 Has dailyScore?', 'dailyScore' in dailyScores[0]);
-      console.log('📊 dailyScore value:', dailyScores[0].dailyScore);
-    }
+    console.log('📊 DailyTrendChart received:', dailyScores.length, 'entries');
+    console.log('📊 Valid scores:', validScores.length);
   });
   
   function handleDayClick(date: string) {
@@ -52,18 +58,19 @@
     return 0;
   }
   
-  function getBarColor(score: number): string {
-    if (score < 40) return 'bg-red-400';
-    if (score < 70) return 'bg-yellow-400';
+  function getBarColor(score: number | null | undefined): string {
+    const s = score ?? 0;
+    if (s < 40) return 'bg-red-400';
+    if (s < 70) return 'bg-yellow-400';
     return 'bg-brand-green';
   }
 </script>
 
 <div class="w-full">
-  {#if dailyScores.length === 0}
+  {#if !hasData}
     <div class="text-center py-8 text-gray-500">
-      <p>Noch keine Daten verfügbar</p>
-      <p class="text-sm">Starte deinen ersten Test, um deine Entwicklung zu sehen.</p>
+      <p class="font-semibold mb-2">Noch keine Daten verfügbar</p>
+      <p class="text-sm">Beginne mit deinem ersten Test, um deinen Verlauf zu sehen.</p>
     </div>
   {:else}
     <!-- Chart Area - Improved Visibility -->
@@ -88,7 +95,7 @@
         </div>
         
         <!-- Bars -->
-        {#each dailyScores.slice().reverse() as day, index}
+        {#each validScores.slice().reverse() as day, index}
           {@const score = getScore(day)}
           {@const barHeight = Math.max(score, 8)}
           <button

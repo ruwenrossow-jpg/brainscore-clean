@@ -1,7 +1,14 @@
 <script lang="ts">
   /**
-   * Test Flow - State Machine
-   * Orchestriert den gesamten SART-Test-Ablauf + Digital Check-in
+   * Test Flow - State Machine (Extended v2.0)
+   * 
+   * NEUER FLOW:
+   * 1. Instructions (Instruktionen mit "Wichtig zu wissen"-Box)
+   * 2. Test (Ampel-Countdown → SART)
+   * 3. Result (Score anzeigen)
+   * 4. Test Context Form (NEU: "Unter welchen Umständen?")
+   * 5. Digital Check-in (Screentime + Kategorien - prominenter)
+   * 6. Dashboard-Redirect
    * 
    * ⚠️ Auth-Guard: Nur für eingeloggte User zugänglich
    */
@@ -13,16 +20,16 @@
   import SartInstructions from '$lib/components/sart/SartInstructions.svelte';
   import SartTest from '$lib/components/sart/SartTest.svelte';
   import SartResult from '$lib/components/sart/SartResult.svelte';
+  import TestContextForm from '$lib/components/sart/TestContextForm.svelte';
   import DigitalCheckIn from '$features/digitalLog/DigitalCheckIn.svelte';
   import { goto } from '$app/navigation';
   import { isAuthenticated } from '$lib/stores/auth.store';
 
-  type ExtendedTestStep = TestStep | 'digital-checkin';
+  type ExtendedTestStep = TestStep | 'test-context' | 'digital-checkin';
   
   let step = $state<ExtendedTestStep>('instructions');
   let metrics: SartMetrics | null = $state(null);
   let sessionId: string | null = $state(null);
-  let showDigitalCheckIn = $state(false);
   let authCheckComplete = $state(false);
   
   // Auth-Guard: Redirect wenn nicht eingeloggt
@@ -46,8 +53,13 @@
   }
   
   function handleResultNext() {
-    // Show digital check-in prompt
-    showDigitalCheckIn = true;
+    // Proceed to Test Context Form (NEW)
+    step = 'test-context';
+  }
+  
+  function handleTestContextComplete() {
+    // Proceed to Digital Check-in
+    step = 'digital-checkin';
   }
   
   function handleDigitalCheckInComplete() {
@@ -69,45 +81,69 @@
       <p class="text-gray-600">Prüfe Authentifizierung...</p>
     </div>
   {:else if step === 'instructions'}
+    <!-- Back-Button wird in SartInstructions selbst gerendert -->
     <SartInstructions onStart={() => (step = 'test')} />
     
   {:else if step === 'test'}
+    <!-- Kein Back während des Tests (würde Test abbrechen) -->
     <SartTest onComplete={handleTestComplete} />
     
-    {:else if step === 'result'}
-    {#if showDigitalCheckIn && sessionId}
-      <!-- Digital Check-in View -->
-      <div class="w-full max-w-lg space-y-8">
-        <!-- Result Card (compact) -->
-        <div class="flex justify-center">
-          <SartResult {metrics} onNext={handleResultNext} />
-        </div>
-        
-        <!-- Digital Check-in Card -->
-        <div class="flex justify-center">
-          <DigitalCheckIn 
-            testId={sessionId} 
-            onComplete={handleDigitalCheckInComplete}
-            onSkip={handleDigitalCheckInSkip}
-          />
-        </div>
+  {:else if step === 'result'}
+    <div class="w-full max-w-lg relative">
+      <!-- Back to Dashboard Button -->
+      <div class="absolute top-4 left-4 z-10">
+        <button
+          onclick={() => goto('/dashboard')}
+          class="flex items-center gap-2 text-gray-600 hover:text-brand-purple transition-colors touch-target"
+          aria-label="Zum Dashboard"
+        >
+          <span class="material-symbols-outlined text-2xl">arrow_back</span>
+          <span class="text-sm font-bold">Dashboard</span>
+        </button>
       </div>
-    {:else}
-      <!-- Result Only (with CTA to show check-in) -->
-      <div class="w-full max-w-lg space-y-6">
-        <SartResult {metrics} onNext={handleResultNext} />
-        
-        {#if !showDigitalCheckIn && sessionId}
-          <div class="text-center">
-            <button
-              onclick={() => showDigitalCheckIn = true}
-              class="btn-secondary w-full max-w-md"
-            >
-              <span class="material-symbols-outlined">smartphone</span>
-              Digitalen Check-in ausfüllen (optional)
-            </button>
-          </div>
-        {/if}
+      <SartResult {metrics} onNext={handleResultNext} />
+    </div>
+    
+  {:else if step === 'test-context'}
+    {#if sessionId}
+      <div class="w-full max-w-lg relative">
+        <!-- Back to Dashboard Button -->
+        <div class="mb-4">
+          <button
+            onclick={() => goto('/dashboard')}
+            class="flex items-center gap-2 text-gray-600 hover:text-brand-purple transition-colors touch-target"
+            aria-label="Zum Dashboard"
+          >
+            <span class="material-symbols-oriented text-2xl">arrow_back</span>
+            <span class="text-sm font-bold">Dashboard</span>
+          </button>
+        </div>
+        <TestContextForm 
+          testId={sessionId} 
+          onComplete={handleTestContextComplete}
+        />
+      </div>
+    {/if}
+    
+  {:else if step === 'digital-checkin'}
+    {#if sessionId}
+      <div class="w-full max-w-lg relative">
+        <!-- Back to Dashboard Button -->
+        <div class="mb-4">
+          <button
+            onclick={() => goto('/dashboard')}
+            class="flex items-center gap-2 text-gray-600 hover:text-brand-purple transition-colors touch-target"
+            aria-label="Zum Dashboard"
+          >
+            <span class="material-symbols-outlined text-2xl">arrow_back</span>
+            <span class="text-sm font-bold">Dashboard</span>
+          </button>
+        </div>
+        <DigitalCheckIn 
+          testId={sessionId} 
+          onComplete={handleDigitalCheckInComplete}
+          onSkip={handleDigitalCheckInSkip}
+        />
       </div>
     {/if}
   {/if}

@@ -131,6 +131,35 @@ export class SartService {
   }
 
   /**
+   * Speichert Test-Kontext (neue Funktion für v2.0 Flow)
+   * @param sessionId SART Session ID
+   * @param tags Array von Context-Tags (z.B. ['nach_uni', 'im_bett'])
+   * @param customText Optional: Freitext wenn "Sonstiges" gewählt
+   */
+  static async saveTestContext(
+    sessionId: string,
+    tags: string[],
+    customText?: string
+  ): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('sart_sessions')
+        .update({
+          test_context_tags: tags,
+          test_context_custom: customText || null,
+        } as any)
+        .eq('id', sessionId);
+
+      if (error) throw error;
+      console.log('✅ Test context saved:', { sessionId, tags, customText });
+      return true;
+    } catch (error) {
+      console.error('❌ Error saving test context:', error);
+      return false;
+    }
+  }
+
+  /**
    * Speichert Screentime-Report
    */
   static async saveScreentimeReport(

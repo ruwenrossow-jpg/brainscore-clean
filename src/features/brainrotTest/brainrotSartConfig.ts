@@ -16,6 +16,11 @@
  * @see docs/brainrot-sart-short-v1_brainscore-v1.md Section 3.2
  */
 
+/**
+ * SART Mode - Controls whether test is tutorial or production
+ */
+export type SartMode = 'tutorial' | 'production';
+
 export const BRAINROT_SART_CONFIG = {
 	// Test structure
 	TOTAL_TRIALS: 60,
@@ -41,6 +46,31 @@ export const BRAINROT_SART_CONFIG = {
 	
 	// Valid trial threshold for DisciplineScore
 	MIN_VALID_TRIAL_RATIO: 0.8
+};
+
+/**
+ * Tutorial Mode Configuration
+ * Slower, shorter version for onboarding with step-by-step guidance
+ */
+export const TUTORIAL_SART_CONFIG = {
+	// Test structure
+	TOTAL_TRIALS: 10, // Short demo: 10 trials instead of 60
+	
+	// Timing (slower for learning)
+	STIMULUS_DURATION_MS: 800, // 800ms instead of 500ms (more time to read)
+	MASK_DURATION_MS: 1200, // 1200ms instead of 900ms (more breathing room)
+	TOTAL_TRIAL_DURATION_MS: 2000,
+
+	// Stimuli (same as production)
+	STIMULUS_DIGITS: [1, 2, 3, 4, 5, 6, 7, 8, 9] as const,
+	GO_DIGITS: [1, 2, 4, 5, 6, 7, 8, 9] as const,
+	NO_GO_DIGIT: 3,
+
+	// Tutorial-specific: Fixed trial sequence for consistent UX
+	// Trial sequence: [2, 7, 3, 5, 8, 3, 1, 6, 9, 4]
+	// Position 2 (3rd trial) and 5 (6th trial) are No-Go
+	FIXED_SEQUENCE: [2, 7, 3, 5, 8, 3, 1, 6, 9, 4],
+	NO_GO_INDICES: [2, 5], // Indices where 3 appears
 };
 
 export type StimulusDigit = (typeof BRAINROT_SART_CONFIG.STIMULUS_DIGITS)[number];

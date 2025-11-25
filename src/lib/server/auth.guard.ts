@@ -12,13 +12,13 @@ import type { RequestEvent } from '@sveltejs/kit';
 
 /**
  * Prüft ob User eingeloggt ist
- * Wirft redirect() wenn nicht → User wird zu /auth weitergeleitet
+ * Wirft redirect() wenn nicht → User wird zum Startscreen (/) weitergeleitet
  */
 export async function requireAuth(event: RequestEvent) {
   const session = await event.locals.getSession();
   
   if (!session) {
-    throw redirect(303, '/auth');
+    throw redirect(303, '/');
   }
   
   return session;

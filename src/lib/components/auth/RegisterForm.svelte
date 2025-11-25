@@ -15,6 +15,7 @@
   let email = $state('');
   let password = $state('');
   let name = $state('');
+  let emailConsentResearchUpdates = $state(false);
   let isLoading = $state(false);
   let errorMessage = $state('');
   let successMessage = $state('');
@@ -36,7 +37,7 @@
     errorMessage = '';
     successMessage = '';
     
-    const { error, requiresEmailConfirmation } = await auth.signUp(email, password, name);
+    const { error, requiresEmailConfirmation } = await auth.signUp(email, password, name, emailConsentResearchUpdates);
     
     isLoading = false;
     
@@ -111,6 +112,24 @@
       required
       minlength="6"
     />
+  </div>
+
+  <!-- E-Mail Opt-in: Forschungs-Updates -->
+  <div class="form-control">
+    <label class="label cursor-pointer justify-start gap-3 py-4 px-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
+      <input 
+        type="checkbox" 
+        class="checkbox checkbox-sm border-gray-400 checked:border-brand-purple checked:bg-brand-purple"
+        bind:checked={emailConsentResearchUpdates}
+        disabled={isLoading}
+      />
+      <span class="label-text text-sm text-gray-700 leading-relaxed">
+        Ich möchte <strong class="text-gray-900">sonntags per E-Mail</strong> eine kurze Zusammenfassung der aktuellen Forschungsergebnisse und Erkenntnisse aus BrainrotAI erhalten.
+      </span>
+    </label>
+    <p class="text-xs text-gray-500 mt-2 px-3">
+      Optional. Du kannst das jederzeit in den Einstellungen ändern.
+    </p>
   </div>
 
   <BaseButton 

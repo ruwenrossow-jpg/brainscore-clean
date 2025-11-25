@@ -19,6 +19,7 @@ export interface UserProfile {
   onboarding_completed: boolean;
   avatar_url?: string;
   timezone?: string;
+  email_consent_research_updates: boolean;
 }
 
 // Auth State (kombiniert User + Profile)
@@ -37,4 +38,5 @@ export interface LoginCredentials {
 
 export interface RegisterCredentials extends LoginCredentials {
   name?: string;
+  emailConsentResearchUpdates?: boolean;
 }

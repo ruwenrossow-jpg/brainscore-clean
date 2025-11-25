@@ -89,7 +89,10 @@
   <div>
     <h2 class="text-2xl md:text-3xl lg:text-4xl font-black text-gray-900 mb-2 md:mb-3">Wann & wofür testen?</h2>
     <p class="text-gray-600 text-sm md:text-base mb-2">
-      Wähle bis zu drei Situationen, in denen du regelmäßig einen Test machen möchtest, und lege gleich die Uhrzeit fest.
+      Wähle bis zu drei Situationen, in denen du regelmäßig testen möchtest – zum Beispiel vor dem Lernen oder abends vor dem Schlafen. Du kannst die Uhrzeiten frei anpassen.
+    </p>
+    <p class="text-xs text-gray-500 mb-2">
+      Die vorgeschlagenen Uhrzeiten sind nur Beispiele – du kannst jede Zeit frei wählen.
     </p>
     <div class="text-sm text-brand-purple font-bold">
       {contexts.length} von 3 ausgewählt
@@ -133,6 +136,7 @@
                   onclick={(e) => e.stopPropagation()}
                   class="input input-bordered w-full max-w-[180px] h-10 md:h-12 text-sm md:text-base font-mono bg-white"
                 />
+                <p class="text-xs text-gray-500 mt-1">Standardzeit – du kannst sie frei ändern</p>
               </div>
             {:else}
               <!-- Default time hint (inactive state) -->
@@ -156,10 +160,13 @@
     {/each}
   </div>
   
-  <!-- Custom Context Card -->
+  <!-- Custom Context Card - Vereinheitlichter Stil -->
   {#if contexts.length < 3}
-    <div class="p-4 md:p-5 rounded-xl md:rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50">
-      <div class="font-black text-base md:text-lg text-gray-900 mb-3">Eigene Situation hinzufügen</div>
+    <div class="p-4 md:p-5 rounded-xl md:rounded-2xl border-2 border-gray-200 bg-white hover:border-brand-purple/30 transition-colors">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="material-symbols-outlined text-brand-purple text-2xl">add_circle</span>
+        <div class="font-black text-base md:text-lg text-gray-900">Eigene Situation hinzufügen</div>
+      </div>
       
       <div class="space-y-3">
         <div>
@@ -195,7 +202,7 @@
           disabled={!customLabel.trim()}
         >
           <span class="material-symbols-outlined mr-2">add</span>
-          Hinzufügen
+          Eigene Situation speichern
         </button>
       </div>
     </div>

@@ -87,15 +87,15 @@
     </div>
   {:else}
     
-    <!-- Header - Glassmorphism wie Landing -->
-    <header class="nav-glass">
+    <!-- Header - Sticky & Fixed Label -->
+    <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-sm shadow-sm">
       <div class="container mx-auto px-4 py-4">
         <div class="flex justify-between items-center">
           <div class="flex items-center gap-3">
             <div class="w-12 h-12 bg-gradient-purple rounded-full flex items-center justify-center shadow-lg">
               <span class="text-white font-black text-xl">B</span>
             </div>
-            <h1 class="text-2xl font-black text-gray-900">BrainScore</h1>
+            <h1 class="text-2xl font-black text-gray-900">BrainrotAI</h1>
           </div>
           <button class="btn btn-ghost btn-sm touch-target hover:text-brand-purple transition-colors" onclick={logout}>
             Abmelden
@@ -125,13 +125,18 @@
               <h2 class="text-3xl font-black text-gray-900 mb-6">Dein heutiger <span class="text-gradient-purple">BrainScore</span></h2>
               
               {#if dashboardData.today.score !== null}
-                <!-- Score Display -->
-                <div class="flex items-baseline gap-4 mb-6">
-                  <div class="score-display">
+                <!-- Score Display - Klickbar für Tagesdetail -->
+                <button
+                  onclick={() => handleDayClick(new Date().toISOString().split('T')[0])}
+                  class="flex items-baseline gap-4 mb-6 hover:opacity-80 transition-opacity cursor-pointer group w-full"
+                  title="Details zum heutigen Tag anzeigen"
+                >
+                  <div class="score-display group-hover:scale-105 transition-transform">
                     {dashboardData.today.score}
                   </div>
                   <div class="text-3xl text-gray-400 font-bold">/100</div>
-                </div>
+                  <span class="material-symbols-outlined text-gray-400 group-hover:text-brand-purple transition-colors">arrow_forward</span>
+                </button>
                 
                 <!-- Score Band -->
                 <div class="mb-6">
@@ -233,19 +238,22 @@
                 dailyScores={dashboardData.twoWeekTrend}
                 onSelectDay={handleDayClick}
               />
-              
-              {#if dashboardData.twoWeekTrend.length > 0}
-                <div class="mt-4 text-center">
-                  <button 
-                    class="btn-secondary w-full"
-                    onclick={() => goto('/logbuch')}
-                  >
-                    Alle Tage anzeigen
-                  </button>
-                </div>
-              {/if}
             </div>
           </div>
+          
+          <!-- Alle Tage Button - Prominent unter Chart -->
+          {#if dashboardData.twoWeekTrend.length > 0}
+            <div class="animate-fadeIn" style="animation-delay: 0.3s;">
+              <button 
+                class="btn-outline w-full h-14 text-base font-bold hover:bg-brand-purple/5 transition-colors"
+                onclick={() => goto('/logbuch')}
+              >
+                <span class="material-symbols-outlined mr-2">calendar_month</span>
+                Alle Tage im Detail anzeigen
+                <span class="ml-2">→</span>
+              </button>
+            </div>
+          {/if}
           
         </div>
         

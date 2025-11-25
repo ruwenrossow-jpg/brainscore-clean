@@ -63,7 +63,8 @@ export class ProfileService {
   static async upsertProfile(
     userId: string,
     name: string,
-    goal?: string
+    goal?: string,
+    emailConsentResearchUpdates?: boolean
   ): Promise<{ success: boolean; error: any }> {
     try {
       const { error } = await supabase
@@ -73,7 +74,8 @@ export class ProfileService {
           name: name,
           goal: goal || null,
           onboarding_completed: true,
-          data_consent: true  // User hat Onboarding abgeschlossen = implizites Consent
+          data_consent: true,  // User hat Onboarding abgeschlossen = implizites Consent
+          email_consent_research_updates: emailConsentResearchUpdates || false
         } as any, {
           onConflict: 'id'  // Falls Profil schon existiert: Update
         });

@@ -25,6 +25,7 @@ export interface Database {
           onboarding_completed: boolean;
           avatar_url: string | null;
           timezone: string | null;
+          email_consent_research_updates: boolean;
         };
         Insert: {
           id: string;
@@ -36,6 +37,7 @@ export interface Database {
           onboarding_completed?: boolean;
           avatar_url?: string | null;
           timezone?: string | null;
+          email_consent_research_updates?: boolean;
         };
         Update: {
           id?: string;
@@ -47,6 +49,7 @@ export interface Database {
           onboarding_completed?: boolean;
           avatar_url?: string | null;
           timezone?: string | null;
+          email_consent_research_updates?: boolean;
         };
       };
       sart_sessions: {

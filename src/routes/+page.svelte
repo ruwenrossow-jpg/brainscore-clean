@@ -57,9 +57,12 @@
             Zum Dashboard
           </button>
         {:else}
-          <button onclick={() => goto('/auth')} class="btn-gradient-primary w-full text-lg font-bold">
+          <button onclick={() => goto('/onboarding')} class="btn-gradient-primary w-full h-14 text-lg font-bold">
             Jetzt starten
             <span class="ml-2">→</span>
+          </button>
+          <button onclick={() => goto('/auth')} class="btn-ghost w-full text-sm text-gray-700 hover:text-brand-purple transition-colors">
+            Bereits ein Konto?
           </button>
         {/if}
       </div>

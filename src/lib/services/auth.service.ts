@@ -43,7 +43,8 @@ export class AuthService {
             id: data.user.id,
             name: credentials.name || 'Neuer Nutzer',
             onboarding_completed: false,
-            data_consent: false
+            data_consent: false,
+            email_consent_research_updates: credentials.emailConsentResearchUpdates || false
           } as any);
         
         if (profileError) {

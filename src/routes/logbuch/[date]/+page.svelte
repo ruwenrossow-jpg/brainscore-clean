@@ -97,9 +97,9 @@
       }
       
       // Calculate cognitive insights if conditions met
+      // FIX: Ab erstem Test freischalten (nicht erst ab 3)
       if (
-        totalUserTests >= INSIGHTS_CONFIG.minTestsForInsights &&
-        sessions.length >= INSIGHTS_CONFIG.minTestsPerDayForInsights
+        sessions.length >= 1  // Mind. 1 Test am Tag reicht
       ) {
         showInsights = true;
         
@@ -140,6 +140,16 @@
     if (score >= 70) return '🟢';
     if (score >= 40) return '🟡';
     return '🔴';
+  }
+  
+  function getTooltipText(dimensionId: string): string {
+    const tooltips: Record<string, string> = {
+      'inhibition': 'Wie gut du es geschafft hast, auf die 3 NICHT zu reagieren. Mehr Fehler = impulsiver.',
+      'vigilance': 'Wie zuverlässig du über die gesamte Dauer auf die Go-Zahlen reagiert hast (Durchhalteaufmerksamkeit).',
+      'stability': 'Wie gleichmäßig deine Reaktionszeiten waren. Starke Schwankungen deuten auf Unruhe oder Müdigkeit hin.',
+      'engagement': 'Wie sauber der Test durchgeführt wurde (z. B. wenige abgebrochene Trials oder Unterbrechungen).'
+    };
+    return tooltips[dimensionId] || 'Keine Erklärung verfügbar';
   }
 </script>
 
@@ -191,6 +201,66 @@
         </div>
       </div>
     </div>
+    
+    <!-- Cognitive Insights - Prominente Platzierung OBEN -->
+    {#if showInsights && cognitiveInsights}
+      <div class="card-modern mb-6">
+        <div class="card-body">
+          <h2 class="text-xl font-bold mb-2">Kognitive Bausteine dieses Tages</h2>
+          <p class="text-xs text-gray-500 mb-6 italic">
+            Diese Einschätzungen sind orientierende Hinweise und ersetzen keine Diagnostik.
+          </p>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {#each cognitiveInsights as insight (insight.id)}
+              <div class="bg-white rounded-lg border-2 p-4 hover:border-brand-purple/30 transition-colors">
+                <div class="flex items-start justify-between mb-2">
+                  <div class="flex items-center gap-2">
+                    <h3 class="font-semibold text-sm text-black">{insight.label}</h3>
+                    <!-- Info Tooltip -->
+                    <button 
+                      class="group relative"
+                      title="{getTooltipText(insight.id)}"
+                    >
+                      <span class="material-symbols-outlined text-gray-400 hover:text-brand-purple transition-colors text-base cursor-help">info</span>
+                      <!-- Tooltip Popover -->
+                      <div class="hidden group-hover:block absolute left-6 top-0 z-50 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-xl">
+                        <div class="font-semibold mb-1">{insight.label}</div>
+                        <div class="text-gray-300 leading-relaxed">{getTooltipText(insight.id)}</div>
+                      </div>
+                    </button>
+                  </div>
+                  <span class="badge badge-sm text-white font-semibold"
+                        class:badge-success={insight.level === 'low'}
+                        class:badge-warning={insight.level === 'medium'}
+                        class:badge-error={insight.level === 'high'}>
+                    {#if insight.level === 'low'}
+                      Gut
+                    {:else if insight.level === 'medium'}
+                      Mittel
+                    {:else}
+                      Auffällig
+                    {/if}
+                  </span>
+                </div>
+                <p class="text-xs text-gray-700 leading-relaxed">
+                  {insight.shortText}
+                </p>
+              </div>
+            {/each}
+          </div>
+        </div>
+      </div>
+    {:else if !showInsights && dayDetail.tests.length < 1}
+      <div class="card-modern mb-6">
+        <div class="card-body">
+          <h2 class="text-xl font-bold mb-2">Kognitive Bausteine</h2>
+          <p class="text-sm text-gray-600">
+            Sobald du deinen ersten Test gemacht hast, siehst du hier detaillierte Einblicke in deine Aufmerksamkeit und Impulsivität.
+          </p>
+        </div>
+      </div>
+    {/if}
     
     <!-- Timeline -->
     <div class="card-modern">
@@ -261,52 +331,7 @@
       </div>
     </div>
     
-    <!-- Cognitive Insights (optional deep-dive) -->
-    {#if showInsights && cognitiveInsights}
-      <div class="card-modern mt-6">
-        <div class="card-body">
-          <h2 class="text-xl font-bold mb-2">Kognitive Bausteine dieses Tages</h2>
-          <p class="text-xs text-gray-500 mb-6 italic">
-            Diese Einschätzungen sind orientierende Hinweise und ersetzen keine Diagnostik.
-          </p>
-          
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {#each cognitiveInsights as insight (insight.id)}
-              <div class="bg-white rounded-lg border border-gray-300 p-4">
-                <div class="flex items-start justify-between mb-2">
-                  <h3 class="font-semibold text-sm text-black">{insight.label}</h3>
-                  <span class="badge badge-sm text-white"
-                        class:badge-success={insight.level === 'low'}
-                        class:badge-warning={insight.level === 'medium'}
-                        class:badge-error={insight.level === 'high'}>
-                    {#if insight.level === 'low'}
-                      Gut
-                    {:else if insight.level === 'medium'}
-                      Mittel
-                    {:else}
-                      Auffällig
-                    {/if}
-                  </span>
-                </div>
-                <p class="text-xs text-gray-700 leading-relaxed">
-                  {insight.shortText}
-                </p>
-              </div>
-            {/each}
-          </div>
-        </div>
-      </div>
-    {:else if !showInsights && totalUserTests < INSIGHTS_CONFIG.minTestsForInsights}
-      <div class="card-modern mt-6">
-        <div class="card-body">
-          <h2 class="text-xl font-bold mb-2">Kognitive Bausteine</h2>
-          <p class="text-sm text-gray-600">
-            Sobald du ein paar mehr Tests gemacht hast ({totalUserTests}/{INSIGHTS_CONFIG.minTestsForInsights}), 
-            können wir dir detailliertere Einblicke in deine Aufmerksamkeit und Impulsivität geben.
-          </p>
-        </div>
-      </div>
-    {/if}
+
     
   {/if}
   

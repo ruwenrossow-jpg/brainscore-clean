@@ -88,7 +88,7 @@ function interpretInhibition(commissionErrorRate: number): CognitiveDimensionFee
   
   return {
     id: 'inhibition',
-    label: 'Impulsivität / Response Inhibition',
+    label: 'Impulsivität',
     level,
     shortText
   };
@@ -115,7 +115,7 @@ function interpretVigilance(omissionErrorRate: number): CognitiveDimensionFeedba
   
   return {
     id: 'vigilance',
-    label: 'Vigilanz / Sustained Attention',
+    label: 'Durchhalteaufmerksamkeit',
     level,
     shortText
   };
@@ -142,25 +142,29 @@ function interpretStability(goRTSd: number): CognitiveDimensionFeedback {
   
   return {
     id: 'stability',
-    label: 'Stabilität der Reaktionen',
+    label: 'Reaktionskonsistenz',
     level,
     shortText
   };
 }
 
 /**
- * Engagement / Protokollqualität
+ * Protokollqualität (ehemals Engagement)
  * Gemessen über Valid Trial Ratio (gültige Trials)
+ * 
+ * FIX: Level-Semantik korrigiert
+ * - high validTrialRatio = low level (gut, grün)
+ * - low validTrialRatio = high level (auffällig, rot)
  */
 function interpretEngagement(validTrialRatio: number): CognitiveDimensionFeedback {
   let level: Level;
   let shortText: string;
   
   if (validTrialRatio >= ENGAGEMENT_THRESHOLDS.high) {
-    level = 'high'; // high = sehr gut
-    shortText = 'Du hast den Test sehr gewissenhaft durchgeführt. Fast alle Durchgänge waren technisch valide – ein Zeichen für hohes Engagement.';
+    level = 'low'; // low = gut (hohe Qualität)
+    shortText = 'Du hast den Test sehr gewissenhaft durchgeführt. Fast alle Durchgänge waren technisch valide – ein Zeichen für hohe Protokollqualität.';
   } else if (validTrialRatio <= ENGAGEMENT_THRESHOLDS.low) {
-    level = 'low'; // low = auffällig
+    level = 'high'; // high = auffällig (niedrige Qualität)
     shortText = 'Mehrere Testdurchgänge waren technisch nicht verwertbar. Das kann auf Ablenkungen oder technische Probleme hindeuten.';
   } else {
     level = 'medium';
@@ -169,7 +173,7 @@ function interpretEngagement(validTrialRatio: number): CognitiveDimensionFeedbac
   
   return {
     id: 'engagement',
-    label: 'Engagement / Protokollqualität',
+    label: 'Protokollqualität',
     level,
     shortText
   };

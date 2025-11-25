@@ -93,8 +93,8 @@ export const auth = {
   /**
    * User registrieren
    */
-  async signUp(email: string, password: string, name?: string) {
-    const { data, error } = await AuthService.signUp({ email, password, name });
+  async signUp(email: string, password: string, name?: string, emailConsentResearchUpdates?: boolean) {
+    const { data, error } = await AuthService.signUp({ email, password, name, emailConsentResearchUpdates });
     
     if (error) return { error };
     

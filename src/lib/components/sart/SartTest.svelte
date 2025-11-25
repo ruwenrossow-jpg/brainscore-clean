@@ -6,11 +6,19 @@
    * - Service-Layer macht Logik (kein Business-Code in UI)
    * - Komponente nur für Darstellung + User-Interaktion
    * - Performance.now() für präzise Zeitmessung
+   * 
+   * TEST FLOW v2.0:
+   * 1. Ampel-Countdown (TrafficLightCountdown) - 3 Sekunden
+   * 2. SART Test (90 Trials)
+   * 3. Result Screen
+   * 4. Test Context Form (NEU)
+   * 5. Screentime/Digital Check-in
    */
   
   import { onMount, onDestroy } from 'svelte';
   import { SartService } from '$lib/services/sart.service';
   import { currentUser } from '$lib/stores/auth.store';
+  import TrafficLightCountdown from './TrafficLightCountdown.svelte';
   import type { SartTrial, SartMetrics, SartConfig } from '$lib/types/sart.types';
   
   interface Props {
@@ -26,39 +34,24 @@
     noGoDigit: 3
   };
   
-  type TestState = 'idle' | 'countdown' | 'running' | 'finished';
+  type TestState = 'countdown' | 'running' | 'finished';
   
-  let testState: TestState = $state('idle');
-  let countdownValue = $state(3);
+  let testState: TestState = $state('countdown');
   let trials: SartTrial[] = $state([]);
   let currentIndex = $state(0);
   let showingMask = $state(false);
   let trialStartTime = 0;
   let timer: number | null = null;
-  let countdownTimer: number | null = null;
   
   // Reactive: Aktuelles Trial
   let currentTrial = $derived(trials[currentIndex]);
   let currentDigit = $derived(currentTrial?.digit || 0);
   let progress = $derived((currentIndex / CONFIG.totalTrials) * 100);
   
-  // Countdown starten beim Mount
-  onMount(() => {
-    testState = 'countdown';
-    countdownValue = 3;
-    
-    countdownTimer = window.setInterval(() => {
-      countdownValue -= 1;
-      if (countdownValue === 0) {
-        if (countdownTimer) clearInterval(countdownTimer);
-        startTest();
-      }
-    }, 1000);
-    
-    return () => {
-      if (countdownTimer) clearInterval(countdownTimer);
-    };
-  });
+  function handleCountdownComplete() {
+    // Ampel-Countdown abgeschlossen → Test starten
+    startTest();
+  }
   
   function startTest() {
     // Initialisiere Test - Uses new Brainrot-SART Short v1 trial generation
@@ -115,34 +108,34 @@
   
   onDestroy(() => {
     if (timer) clearTimeout(timer);
-    if (countdownTimer) clearInterval(countdownTimer);
   });
 </script>
 
+<!-- SART Test Card (immer sichtbar, Inhalt wechselt je nach State) -->
 <div class="card-modern w-full max-w-lg animate-fadeIn">
   <div class="p-8 items-center text-center">
     
-    <!-- Progress Header -->
-    <div class="w-full flex justify-between items-center mb-6">
-      <h2 class="text-xl font-bold text-gray-900">Konzentrationstest</h2>
-    </div>
+    <!-- Progress Header (nur während Test) -->
+    {#if testState !== 'countdown'}
+      <div class="w-full flex justify-between items-center mb-6">
+        <h2 class="text-xl font-bold text-gray-900">Konzentrationstest</h2>
+      </div>
 
-    <!-- Progress Bar -->
-    <div class="w-full bg-gray-100 rounded-full h-3 mb-8 overflow-hidden">
-      <div 
-        class="bg-gradient-purple h-3 rounded-full transition-all duration-500 ease-out"
-        style="width: {progress}%"
-      ></div>
-    </div>
+      <!-- Progress Bar -->
+      <div class="w-full bg-gray-100 rounded-full h-3 mb-8 overflow-hidden">
+        <div 
+          class="bg-gradient-purple h-3 rounded-full transition-all duration-500 ease-out"
+          style="width: {progress}%"
+        ></div>
+      </div>
+    {/if}
 
-    <!-- Digit Display -->
+    <!-- Stimulus Area (Zahlen / Maske / Spinner) -->
     <div class="min-h-[320px] flex items-center justify-center my-8 p-12 bg-gray-50 rounded-2xl border border-gray-200 w-full shadow-inner">
       {#if testState === 'countdown'}
-        <div class="text-center">
-          <div class="text-9xl font-black text-gray-900 mb-6 animate-pulse">
-            {countdownValue}
-          </div>
-          <p class="text-gray-600 text-lg font-medium">Test startet gleich...</p>
+        <!-- Countdown-Phase: Leerer Stimulus-Bereich oder Platzhalter -->
+        <div class="text-6xl font-black text-gray-300">
+          ●
         </div>
       {:else if testState === 'running'}
         {#if showingMask}
@@ -162,23 +155,25 @@
       {/if}
     </div>
 
-    <!-- Response Button -->
-    <div class="w-full mt-6">
-      <button 
-        class="btn-gradient-primary w-full h-24 text-2xl font-black transition-all duration-150 active:scale-95 active:shadow-lg"
-        class:opacity-50={testState !== 'running'}
-        class:cursor-not-allowed={testState !== 'running'}
-        class:hover:scale-105={testState === 'running'}
-        class:hover:shadow-purple-button-hover={testState === 'running'}
-        onclick={handleRespond}
-        disabled={testState !== 'running'}
-      >
-        {#if testState === 'countdown'}
-          Gleich geht's los...
-        {:else}
+    <!-- Response Area (Ampel ODER Button - immer an derselben Stelle) -->
+    <div class="w-full mt-6 min-h-[6rem]">
+      {#if testState === 'countdown'}
+        <!-- COUNTDOWN: Ampel an Position des späteren Reaktionsfeldes -->
+        <TrafficLightCountdown onComplete={handleCountdownComplete} />
+      {:else}
+        <!-- TEST/FINISHED: Reaktionsfeld -->
+        <button 
+          class="btn-gradient-primary w-full h-24 text-2xl font-black transition-all duration-150 active:scale-95 active:shadow-lg"
+          class:opacity-50={testState !== 'running'}
+          class:cursor-not-allowed={testState !== 'running'}
+          class:hover:scale-105={testState === 'running'}
+          class:hover:shadow-purple-button-hover={testState === 'running'}
+          onclick={handleRespond}
+          disabled={testState !== 'running'}
+        >
           Reagieren
-        {/if}
-      </button>
+        </button>
+      {/if}
     </div>
 
   </div>

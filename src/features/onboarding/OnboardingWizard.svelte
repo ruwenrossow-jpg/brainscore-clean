@@ -1,34 +1,54 @@
 <script lang="ts">
   /**
-   * Onboarding Wizard
+   * Onboarding Wizard (Extended Flow)
    * 
-   * 4-step onboarding flow:
-   * 1. Welcome & Name
-   * 2. Goal selection (max 3)
-   * 3. Context + Time selection (max 3, combined)
-   * 4. Summary + ICS download + first test
+   * NEUER 7-STEP FLOW (v2.0):
+   * Step 0: Welcome Intro (Projekterklärung, Datennutzung, Mehrwert)
+   * Step 1: Name eingeben
+   * Step 2: Ziele auswählen (max 3)
+   * Step 3: Kontexte & Zeiten (max 3, combined)
+   * Step 4: Registrierung (E-Mail/Passwort + E-Mail-Opt-in für Forschungs-Updates)
+   * Step 5: PWA-Tutorial (iOS/Android Anleitung)
+   * Step 6: Summary + erster Test
+   * 
+   * WICHTIG:
+   * - Welcome Step auch für nicht-eingeloggte User sichtbar
+   * - Registrierung NACH Ziel/Kontext-Auswahl (niedrigere Abbruchrate)
+   * - E-Mail-Opt-in: Sonntags Forschungs-Updates (optional)
+   * - PWA-Tutorial VOR erstem Test (bessere UX)
+   * - Test-Instruktionen betonen: kein "Versagen", nur Zustandsmessung
    */
   import { onMount } from 'svelte';
   import { tick } from 'svelte';
   import { goto, invalidateAll } from '$app/navigation';
   import { onboarding } from './onboardingState';
-  import { currentUser } from '$lib/stores/auth.store';
+  import { currentUser, isAuthenticated, auth } from '$lib/stores/auth.store';
   import { ProfileService } from '$lib/services/profile.service';
+  import WelcomeIntroStep from './WelcomeIntroStep.svelte';
   import ContextAndTimeStep from './ContextAndTimeStep.svelte';
+  import PwaHintStep from './PwaHintStep.svelte';
   import { 
     USER_GOAL_LABELS,
     type UserGoal,
     type TrackingContext
   } from './onboardingTypes';
   
-  type Step = 1 | 2 | 3 | 4;
+  type Step = 0 | 1 | 2 | 3 | 4 | 5 | 6;
   
-  let currentStep = $state<Step>(1);
+  let currentStep = $state<Step>(0);
   let userName = $state('');
   let selectedGoals = $state<UserGoal[]>([]);
   let contexts = $state<TrackingContext[]>([]);
   let isDownloadingICS = $state(false);
   let isSaving = $state(false);
+  
+  // Step 4: Registration state
+  let email = $state('');
+  let password = $state('');
+  let emailConsentResearchUpdates = $state(false);
+  let isRegistering = $state(false);
+  let registrationError = $state('');
+  let registrationSuccess = $state(false);
   
   // Disable browser scroll restoration for smooth step transitions
   onMount(() => {
@@ -62,30 +82,82 @@
   
   // Navigation with scroll-to-top
   async function nextStep() {
+    // Step 0: Welcome - no validation
+    if (currentStep === 0) {
+      currentStep = 1;
+      await tick();
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+      return;
+    }
+    
+    // Step 1: Name validation
     if (currentStep === 1 && !userName.trim()) {
       alert('Bitte gib deinen Namen ein.');
       return;
     }
+    
+    // Step 2: Goals validation
     if (currentStep === 2 && selectedGoals.length === 0) {
       alert('Bitte wähle mindestens ein Ziel aus.');
       return;
     }
+    
+    // Step 3: Contexts validation
     if (currentStep === 3 && contexts.length === 0) {
       alert('Bitte wähle mindestens eine Situation mit Uhrzeit aus.');
       return;
     }
-    if (currentStep < 4) {
+    
+    // Step 4: Registration
+    if (currentStep === 4) {
+      if (!email.trim() || !password.trim()) {
+        registrationError = 'Bitte E-Mail und Passwort eingeben';
+        return;
+      }
+      
+      isRegistering = true;
+      registrationError = '';
+      
+      try {
+        const result = await auth.signUp(
+          email, 
+          password, 
+          userName, 
+          emailConsentResearchUpdates
+        );
+        
+        if (result.error) {
+          const errorMsg = (result.error as any)?.message || 'Registrierung fehlgeschlagen';
+          registrationError = errorMsg === 'User already registered' 
+            ? 'Diese E-Mail ist bereits registriert' 
+            : errorMsg;
+          isRegistering = false;
+          return;
+        }
+        
+        registrationSuccess = true;
+        // Continue to next step
+      } catch (err) {
+        registrationError = 'Registrierung fehlgeschlagen. Bitte versuche es erneut.';
+        isRegistering = false;
+        return;
+      } finally {
+        isRegistering = false;
+      }
+    }
+    
+    // Step 5: PWA Hint - no validation
+    
+    if (currentStep < 6) {
       currentStep = (currentStep + 1) as Step;
-      // Wait for DOM update, then scroll to top
       await tick();
       window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
     }
   }
   
   async function prevStep() {
-    if (currentStep > 1) {
+    if (currentStep > 0) {
       currentStep = (currentStep - 1) as Step;
-      // Wait for DOM update, then scroll to top
       await tick();
       window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
     }
@@ -155,12 +227,13 @@
     
     isSaving = true;
     try {
-      // Save profile (name + primary goal)
+      // Save profile (name + primary goal + email consent)
       const primaryGoal = selectedGoals[0] || 'unsure';
       const { success, error } = await ProfileService.upsertProfile(
         $currentUser.id,
         userName.trim(),
-        primaryGoal
+        primaryGoal,
+        emailConsentResearchUpdates
       );
       
       if (!success) {
@@ -189,15 +262,15 @@
     <!-- Progress Indicator -->
     <div class="mb-6 md:mb-8">
       <div class="flex items-center justify-center gap-2 mb-4">
-        {#each [1, 2, 3, 4] as step}
-          <div class="w-2 h-2 rounded-full {currentStep === step ? 'bg-black' : currentStep > step ? 'bg-gray-400' : 'bg-gray-200'}"></div>
-          {#if step < 4}
-            <div class="w-8 h-0.5 bg-gray-300"></div>
+        {#each [0, 1, 2, 3, 4, 5, 6] as step}
+          <div class="w-2 h-2 rounded-full {currentStep === step ? 'bg-brand-purple' : currentStep > step ? 'bg-purple-300' : 'bg-gray-200'}"></div>
+          {#if step < 6}
+            <div class="w-6 h-0.5 bg-gray-300"></div>
           {/if}
         {/each}
       </div>
-      <p class="text-center text-sm text-gray-600">
-        Schritt {currentStep} von 4
+      <p class="text-center text-sm text-gray-600 font-medium">
+        Schritt {currentStep + 1} von 7
       </p>
     </div>
 
@@ -205,24 +278,31 @@
     <div class="card bg-base-200 shadow-lg border border-gray-200">
       <div class="card-body">
         
-        <!-- Step 1: Welcome & Name -->
+        <!-- Step 0: Welcome Intro -->
+        {#if currentStep === 0}
+          <WelcomeIntroStep />
+          <div class="mt-6">
+            <button 
+              onclick={nextStep} 
+              class="btn-gradient-primary w-full h-12 md:h-14 text-lg md:text-xl font-black"
+            >
+              Weiter <span class="ml-2">→</span>
+            </button>
+          </div>
+        {/if}
+        
+        <!-- Step 1: Name -->
         {#if currentStep === 1}
           <div class="space-y-6 md:space-y-8">
             <div class="text-center">
-              <h1 class="text-3xl md:text-4xl lg:text-5xl font-black text-gray-900 mb-4 md:mb-6 leading-tight">
-                WILLKOMMEN! LASS UNS DEINE <span class="text-gradient-hero">AUFMERKSAMKEIT</span> VERSTEHEN.
-              </h1>
-              <p class="text-gray-600 text-base md:text-lg mb-3 md:mb-4">
-                In wenigen Minuten richten wir deinen persönlichen Fokus-Tracker ein.
-              </p>
-              <p class="text-sm text-gray-600">
-                Dauert nur 3–4 Minuten
+              <h2 class="text-2xl md:text-3xl lg:text-4xl font-black text-gray-900 mb-3 md:mb-4">
+                Wie sollen wir dich nennen?
+              </h2>
+              <p class="text-gray-600 text-sm md:text-base">
+                Dein Name wird nur lokal gespeichert und hilft uns, deine Erfahrung zu personalisieren.
               </p>
             </div>
             <div>
-              <label for="userName" class="block text-sm md:text-base font-bold text-gray-900 mb-2 md:mb-3">
-                Wie sollen wir dich nennen?
-              </label>
               <input
                 id="userName"
                 type="text"
@@ -232,13 +312,19 @@
                 onkeydown={(e) => e.key === 'Enter' && nextStep()}
               />
             </div>
-            <button 
-              onclick={nextStep} 
-              class="btn-gradient-primary w-full h-12 md:h-14 text-lg md:text-xl font-black"
-              disabled={!userName.trim()}
-            >
-              Los geht's <span class="ml-2">→</span>
-            </button>
+            <div class="flex gap-3">
+              <button onclick={prevStep} class="btn-secondary flex-1 h-12 md:h-14 text-sm md:text-base font-bold">
+                <span class="material-symbols-outlined">arrow_back</span>
+                Zurück
+              </button>
+              <button 
+                onclick={nextStep} 
+                class="btn-gradient-primary flex-1 h-12 md:h-14 text-lg md:text-xl font-black"
+                disabled={!userName.trim()}
+              >
+                Weiter <span class="ml-2">→</span>
+              </button>
+            </div>
           </div>
         {/if}
         
@@ -246,9 +332,11 @@
         {#if currentStep === 2}
           <div class="space-y-4 md:space-y-6">
             <div>
-              <h2 class="text-2xl md:text-3xl lg:text-4xl font-black text-gray-900 mb-2 md:mb-3">Deine Ziele</h2>
+              <h2 class="text-2xl md:text-3xl lg:text-4xl font-black text-gray-900 mb-2 md:mb-3">
+                Wobei soll dir BrainrotAI helfen?
+              </h2>
               <p class="text-gray-600 text-sm md:text-base">
-                Wähle bis zu 3 Ziele aus, die für dich wichtig sind.
+                Wähle bis zu drei Bereiche, die für dich am wichtigsten sind. Wir nutzen sie, um dein Logbuch und spätere Auswertungen für dich sinnvoller zu gestalten.
               </p>
             </div>
             
@@ -318,13 +406,113 @@
           </div>
         {/if}
         
-        <!-- Step 4: Summary & Actions -->
+        <!-- Step 4: Registration -->
         {#if currentStep === 4}
+          <div class="space-y-6 md:space-y-8">
+            <div class="text-center">
+              <h2 class="text-2xl md:text-3xl lg:text-4xl font-black text-gray-900 mb-3">
+                Account erstellen
+              </h2>
+              <p class="text-gray-600 text-sm md:text-base">
+                Erstelle deinen Account, um deine Tests und Fortschritte zu speichern.
+              </p>
+            </div>
+            
+            <!-- Registration Form -->
+            <div class="space-y-4">
+              <div>
+                <label for="email" class="block text-sm font-bold text-gray-900 mb-2">
+                  E-Mail
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  bind:value={email}
+                  placeholder="deine@email.de"
+                  class="input input-bordered w-full h-12 rounded-xl bg-gray-50 border-gray-300 focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/20"
+                />
+              </div>
+              
+              <div>
+                <label for="password" class="block text-sm font-bold text-gray-900 mb-2">
+                  Passwort
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  bind:value={password}
+                  placeholder="Mindestens 6 Zeichen"
+                  class="input input-bordered w-full h-12 rounded-xl bg-gray-50 border-gray-300 focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/20"
+                />
+              </div>
+              
+              <!-- Email Consent for Research Updates -->
+              <div class="flex items-start gap-3 p-4 bg-gray-50 rounded-xl border border-gray-200">
+                <input
+                  id="emailConsent"
+                  type="checkbox"
+                  bind:checked={emailConsentResearchUpdates}
+                  class="checkbox checkbox-primary mt-0.5"
+                />
+                <label for="emailConsent" class="flex-1 text-sm text-gray-900 cursor-pointer">
+                  <span class="font-bold">Ich möchte sonntags per E-Mail eine kurze Zusammenfassung der aktuellen Forschungsergebnisse und Erkenntnisse aus BrainrotAI erhalten.</span>
+                  <span class="block text-xs text-gray-600 mt-1">Optional. Jederzeit änderbar in den Einstellungen.</span>
+                </label>
+              </div>
+              
+              {#if registrationError}
+                <div class="alert alert-error">
+                  <span class="material-symbols-outlined">error</span>
+                  <span>{registrationError}</span>
+                </div>
+              {/if}
+            </div>
+            
+            <div class="flex gap-3">
+              <button onclick={prevStep} class="btn-secondary flex-1 h-12 md:h-14 text-sm md:text-base font-bold">
+                <span class="material-symbols-outlined">arrow_back</span>
+                Zurück
+              </button>
+              <button 
+                onclick={nextStep} 
+                class="btn-gradient-primary flex-1 h-12 md:h-14 text-base md:text-lg font-black"
+                disabled={isRegistering}
+              >
+                {#if isRegistering}
+                  <span class="loading loading-spinner"></span>
+                  Wird erstellt...
+                {:else}
+                  Account erstellen <span class="ml-2">→</span>
+                {/if}
+              </button>
+            </div>
+          </div>
+        {/if}
+        
+        <!-- Step 5: PWA Tutorial -->
+        {#if currentStep === 5}
+          <PwaHintStep />
+          <div class="flex gap-3 mt-6">
+            <button onclick={prevStep} class="btn-secondary flex-1 h-12 md:h-14 text-sm md:text-base font-bold">
+              <span class="material-symbols-outlined">arrow_back</span>
+              Zurück
+            </button>
+            <button 
+              onclick={nextStep} 
+              class="btn-gradient-primary flex-1 h-12 md:h-14 text-base md:text-lg font-black"
+            >
+              Verstanden <span class="ml-2">→</span>
+            </button>
+          </div>
+        {/if}
+        
+        <!-- Step 6: Summary & Actions -->
+        {#if currentStep === 6}
           <div class="space-y-4 md:space-y-6">
             <div>
               <h2 class="text-2xl md:text-3xl lg:text-4xl font-black text-gray-900 mb-2 md:mb-3">Alles bereit!</h2>
               <p class="text-gray-600 text-base">
-                Du hast deine Ziele und Check-in-Zeiten konfiguriert.
+                Bevor es losgeht: Probiere den Test einmal aus – in einem kurzen Tutorial-Modus.
               </p>
             </div>
             
@@ -372,8 +560,12 @@
                 {/if}
               </button>
               
+              <!-- Tutorial statt echtem Test -->
               <button
-                onclick={startFirstTest}
+                onclick={async () => {
+                  await completeOnboarding();
+                  if (!isSaving) goto('/test/tutorial');
+                }}
                 class="btn-gradient-primary w-full h-12 md:h-14 text-lg md:text-xl font-black"
                 disabled={isSaving}
               >
@@ -381,10 +573,15 @@
                   <span class="loading loading-spinner"></span>
                   Speichere...
                 {:else}
-                  <span class="material-symbols-outlined mr-2">rocket_launch</span>
-                  Ersten Test starten
+                  <span class="material-symbols-outlined mr-2">school</span>
+                  Test-Tutorial ausprobieren
                 {/if}
               </button>
+              
+              <p class="text-xs text-center text-gray-500 px-4">
+                Das Tutorial erklärt dir Schritt für Schritt, wie der Test funktioniert. 
+                Deine Ergebnisse werden <strong>nicht gespeichert</strong>.
+              </p>
               
               <!-- Skip Option: Direct to Dashboard -->
               <button
@@ -392,7 +589,7 @@
                 class="w-full text-sm text-gray-600 hover:text-brand-purple transition-colors py-2"
                 disabled={isSaving}
               >
-                Später – erst mal umsehen
+                Tutorial überspringen – direkt zum Dashboard
                 <span class="ml-1">→</span>
               </button>
             </div>

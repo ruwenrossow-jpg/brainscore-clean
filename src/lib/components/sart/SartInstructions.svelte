@@ -14,13 +14,37 @@
   let { onStart }: Props = $props();
 </script>
 
-<div class="card-modern w-full max-w-lg animate-fadeIn">
+<div class="card-modern w-full max-w-lg animate-fadeIn relative">
   <div class="p-8">
     
+    <!-- Back Button - iOS Style (oben links) -->
+    <div class="absolute top-4 left-4">
+      <button
+        onclick={() => window.history.back()}
+        class="flex items-center gap-2 text-gray-600 hover:text-brand-purple transition-colors touch-target"
+        aria-label="Zurück"
+      >
+        <span class="material-symbols-outlined text-2xl">arrow_back</span>
+        <span class="text-sm font-bold">Zurück</span>
+      </button>
+    </div>
+    
     <!-- Header -->
-    <div class="text-center mb-8">
+    <div class="text-center mb-8 mt-8">
       <h2 class="text-3xl font-black text-gray-900 mb-3">Konzentrationstest</h2>
       <p class="text-sm text-gray-600 font-medium uppercase tracking-wider">Sustained Attention to Response Task</p>
+    </div>
+    
+    <!-- Test Purpose Clarification -->
+    <div class="p-4 bg-brand-purple/5 rounded-xl border border-brand-purple/20 mb-6">
+      <div class="flex items-start gap-3">
+        <span class="material-symbols-outlined text-brand-purple text-xl flex-shrink-0 mt-0.5">info</span>
+        <div class="text-sm text-gray-700 leading-relaxed">
+          <p class="mb-2 font-semibold text-gray-900">Wichtig zu wissen:</p>
+          <p class="mb-1">Dieser Test misst, wie stabil du auf eine einfache Aufgabe reagieren kannst. Es geht <strong class="text-gray-900">nicht darum, alles perfekt zu machen</strong>.</p>
+          <p>Wenn du öfter auf die 3 klickst oder Go-Reaktionen verpasst, ist das kein "Versagen", sondern ein Hinweis darauf, wie müde oder abgelenkt dein Gehirn gerade ist.</p>
+        </div>
+      </div>
     </div>
     
     <!-- Instructions Box -->
