@@ -2,12 +2,14 @@
 
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { isAuthenticated } from '$lib/stores/auth.store';
   import type { PageData } from './$types';
   
   // Server-Side Rendering: Diese Seite wird nur angezeigt wenn Server-Guard
   // KEINEN Redirect macht (= User ist nicht eingeloggt)
   let { data }: { data: PageData } = $props();
+  
+  // Verwende server-seitige Session statt Client-Store (zuverlässiger)
+  let isLoggedIn = $derived(!!data.session);
 </script>
 
 <svelte:head>
@@ -35,7 +37,7 @@
   <div class="card-modern w-full max-w-md animate-slideUp">
     <div class="p-8 space-y-8">
       
-      {#if $isAuthenticated}
+      {#if isLoggedIn}
         <!-- Eingeloggt: Fokus auf Kontrolle -->
         <h2 class="text-3xl md:text-4xl font-black text-gray-900 text-center leading-tight">
           Gewinne die <span class="text-gradient-hero">Kontrolle</span> über deine Aufmerksamkeit zurück.
@@ -48,7 +50,7 @@
       {/if}
 
       <div class="flex flex-col justify-center pt-4 space-y-4">
-        {#if $isAuthenticated}
+        {#if isLoggedIn}
           <button onclick={() => goto('/test')} class="btn-gradient-primary w-full text-lg font-bold">
             Test starten
             <span class="ml-2">→</span>
@@ -68,7 +70,7 @@
       </div>
 
       <p class="text-xs text-gray-600 text-center mt-4">
-        {#if $isAuthenticated}
+        {#if isLoggedIn}
           Deine Tests werden automatisch gespeichert und sind jederzeit im Dashboard verfügbar
         {:else}
           Erstelle einen Account, um deine Fortschritte zu tracken
