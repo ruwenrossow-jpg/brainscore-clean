@@ -126,7 +126,12 @@
   }
   
   function goBack() {
-    goto('/logbuch');
+    // Check if user came from dashboard by looking at referrer or using browser history
+    if (typeof window !== 'undefined' && document.referrer.includes('/dashboard')) {
+      goto('/dashboard');
+    } else {
+      goto('/logbuch');
+    }
   }
   
   function formatTime(timestamp: string): string {
@@ -157,10 +162,11 @@
   
   <!-- Back Button -->
   <button 
-    class="btn btn-ghost mb-4 touch-target hover:text-brand-purple transition-colors"
+    class="px-4 py-2 rounded-lg font-semibold text-sm transition-all border-2 border-gray-300 hover:border-brand-purple hover:bg-brand-purple/5 active:scale-95 min-h-[44px] mb-4 inline-flex items-center gap-2"
     onclick={goBack}
   >
-    ← Zurück zum Logbuch
+    <span class="material-symbols-outlined text-lg">arrow_back</span>
+    {typeof window !== 'undefined' && document.referrer.includes('/dashboard') ? 'Zurück zum Dashboard' : 'Zurück zum Logbuch'}
   </button>
   
   {#if loading}
@@ -217,16 +223,18 @@
                 <div class="flex items-start justify-between mb-2">
                   <div class="flex items-center gap-2">
                     <h3 class="font-semibold text-sm text-black">{insight.label}</h3>
-                    <!-- Info Tooltip -->
+                    <!-- Info Tooltip - Mobile-optimiert -->
                     <button 
                       class="group relative"
                       title="{getTooltipText(insight.id)}"
                     >
                       <span class="material-symbols-outlined text-gray-400 hover:text-brand-purple transition-colors text-base cursor-help">info</span>
-                      <!-- Tooltip Popover -->
-                      <div class="hidden group-hover:block absolute left-6 top-0 z-50 w-64 p-3 bg-gray-900 text-white text-xs rounded-lg shadow-xl">
+                      <!-- Tooltip Popover - Responsive Positioning -->
+                      <div class="hidden group-hover:block group-active:block absolute right-0 top-6 z-50 w-64 max-w-[calc(100vw-2rem)] p-3 bg-gray-900 text-white text-xs rounded-lg shadow-xl">
                         <div class="font-semibold mb-1">{insight.label}</div>
                         <div class="text-gray-300 leading-relaxed">{getTooltipText(insight.id)}</div>
+                        <!-- Tooltip Arrow -->
+                        <div class="absolute -top-2 right-2 w-0 h-0 border-l-8 border-r-8 border-b-8 border-l-transparent border-r-transparent border-b-gray-900"></div>
                       </div>
                     </button>
                   </div>

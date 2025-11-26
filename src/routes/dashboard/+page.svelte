@@ -87,8 +87,8 @@
     </div>
   {:else}
     
-    <!-- Header - Sticky & Fixed Label -->
-    <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-sm shadow-sm">
+    <!-- Header - Static -->
+    <header class="bg-white shadow-sm">
       <div class="container mx-auto px-4 py-4">
         <div class="flex justify-between items-center">
           <div class="flex items-center gap-3">
@@ -97,7 +97,10 @@
             </div>
             <h1 class="text-2xl font-black text-gray-900">BrainrotAI</h1>
           </div>
-          <button class="btn btn-ghost btn-sm touch-target hover:text-brand-purple transition-colors" onclick={logout}>
+          <button 
+            class="px-4 py-2 rounded-lg font-semibold text-sm transition-all border-2 border-gray-300 hover:border-brand-purple hover:bg-brand-purple/5 active:scale-95 min-h-[44px] min-w-[44px]" 
+            onclick={logout}
+          >
             Abmelden
           </button>
         </div>
@@ -105,7 +108,7 @@
     </header>
     
     <!-- Main Content -->
-    <main class="container mx-auto px-4 pt-24 pb-12 max-w-4xl">
+    <main class="container mx-auto px-4 pt-6 pb-12 max-w-4xl">
       
       {#if loading}
         <div class="flex justify-center py-12">
@@ -272,7 +275,7 @@
           <p class="text-gray-400 text-sm">Verstehe deine <span class="text-brand-accent">Aufmerksamkeit</span></p>
         </div>
         <div class="text-gray-400 text-sm">
-          <p>© {new Date().getFullYear()} BrainrotAI. Cognitive Performance Testing.</p>
+          <p>{new Date().getFullYear()} BrainrotAI. Cognitive Performance Testing.</p>
         </div>
       </div>
     </footer>

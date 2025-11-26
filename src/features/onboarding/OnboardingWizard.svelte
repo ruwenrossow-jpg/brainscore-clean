@@ -546,52 +546,47 @@
             
             <!-- Actions -->
             <div class="space-y-3">
+              <!-- Kalender-Reminder (Sekundär) -->
               <button
                 onclick={downloadICS}
-                class="btn btn-outline w-full"
+                class="w-full h-12 md:h-14 px-6 rounded-xl font-bold text-sm md:text-base border-2 border-gray-300 hover:border-brand-purple hover:bg-brand-purple/5 transition-all active:scale-95"
                 disabled={isDownloadingICS}
               >
                 {#if isDownloadingICS}
                   <span class="loading loading-spinner"></span>
                   Erstelle Kalender...
                 {:else}
-                  <span class="material-symbols-outlined mr-2">calendar_month</span>
                   Kalender-Reminder hinzufügen
                 {/if}
               </button>
               
-              <!-- Tutorial statt echtem Test -->
+              <!-- Tutorial CTA (Primär) -->
               <button
                 onclick={async () => {
                   await completeOnboarding();
                   if (!isSaving) goto('/test/tutorial');
                 }}
-                class="btn-gradient-primary w-full h-12 md:h-14 text-lg md:text-xl font-black"
+                class="btn-gradient-primary w-full h-12 md:h-14 text-base md:text-lg font-black"
                 disabled={isSaving}
               >
                 {#if isSaving}
                   <span class="loading loading-spinner"></span>
                   Speichere...
                 {:else}
-                  <span class="material-symbols-outlined mr-2">school</span>
-                  Test-Tutorial ausprobieren
+                  Test-Tutorial starten
                 {/if}
               </button>
               
-              <p class="text-xs text-center text-gray-500 px-4">
-                Das Tutorial erklärt dir Schritt für Schritt, wie der Test funktioniert. 
-                Deine Ergebnisse werden <strong>nicht gespeichert</strong>.
-              </p>
-              
-              <!-- Skip Option: Direct to Dashboard -->
-              <button
-                onclick={goToDashboard}
-                class="w-full text-sm text-gray-600 hover:text-brand-purple transition-colors py-2"
-                disabled={isSaving}
-              >
-                Tutorial überspringen – direkt zum Dashboard
-                <span class="ml-1">→</span>
-              </button>
+              <!-- Skip Link (Tertiary) -->
+              <div class="text-center mt-4">
+                <button
+                  onclick={goToDashboard}
+                  class="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                  disabled={isSaving}
+                >
+                  Tutorial überspringen – direkt zum Dashboard
+                </button>
+              </div>
             </div>
             
             <div class="text-center">

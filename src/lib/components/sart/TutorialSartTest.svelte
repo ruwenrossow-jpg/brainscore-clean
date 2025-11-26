@@ -163,11 +163,10 @@
 <div class="card-modern w-full max-w-lg animate-fadeIn relative">
   <div class="p-8 items-center text-center">
     
-    <!-- Progress Header (nur während Test) -->
+    <!-- Progress Header (nur während Test - IDENTISCH zu Production Test) -->
     {#if testState !== 'countdown'}
       <div class="w-full flex justify-between items-center mb-6">
-        <h2 class="text-xl font-bold text-gray-900">Tutorial</h2>
-        <span class="badge badge-primary">Demo-Modus</span>
+        <h2 class="text-xl font-bold text-gray-900">Konzentrationstest</h2>
       </div>
 
       <!-- Progress Bar -->
@@ -178,25 +177,25 @@
         ></div>
       </div>
 
-      <!-- Tutorial Overlay (Top) -->
+      <!-- Tutorial Overlay (klein, unauffällig über Stimulus) -->
       {#if overlayText && testState === 'running'}
-        <div class="mb-4 p-4 bg-blue-50 border-2 border-blue-300 rounded-xl animate-pulse">
-          <p class="text-sm md:text-base font-bold text-blue-900">
+        <div class="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <p class="text-xs md:text-sm font-semibold text-blue-800 leading-snug">
             {overlayText}
           </p>
         </div>
       {/if}
 
-      <!-- No-Go Feedback (after first 3) -->
+      <!-- No-Go Feedback (dezent, nach erster 3) -->
       {#if noGoFeedback && tutorialPhase === 'first-nogo' && showingMask}
-        <div class="mb-4 p-4 rounded-xl {noGoFeedback === 'correct' ? 'bg-green-50 border-2 border-green-300' : 'bg-yellow-50 border-2 border-yellow-300'}">
+        <div class="mb-3 p-3 rounded-lg {noGoFeedback === 'correct' ? 'bg-green-50 border border-green-200' : 'bg-yellow-50 border border-yellow-200'}">
           {#if noGoFeedback === 'correct'}
-            <p class="text-sm md:text-base font-bold text-green-900">
-              ✓ Genau so – bei der 3 lässt du das Feld los!
+            <p class="text-xs md:text-sm font-semibold text-green-800">
+              Genau so – bei der 3 nicht klicken!
             </p>
           {:else}
-            <p class="text-sm md:text-base font-bold text-yellow-900">
-              Im echten Test wäre das ein Fehler. Es geht aber nicht um Perfektion, sondern um deinen Zustand.
+            <p class="text-xs md:text-sm font-semibold text-yellow-800">
+              Im echten Test wäre das ein Fehler – hier zum Lernen.
             </p>
           {/if}
         </div>

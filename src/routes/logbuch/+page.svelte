@@ -92,10 +92,11 @@
   <div class="flex items-center justify-between mb-8">
     <h1 class="text-3xl font-bold text-black">Logbuch</h1>
     <button 
-      class="btn btn-ghost touch-target hover:text-brand-purple transition-colors"
+      class="px-4 py-2 rounded-lg font-semibold text-sm transition-all border-2 border-gray-300 hover:border-brand-purple hover:bg-brand-purple/5 active:scale-95 min-h-[44px] inline-flex items-center gap-2"
       onclick={goToDashboard}
     >
-      ← Dashboard
+      <span class="material-symbols-outlined text-lg">arrow_back</span>
+      Dashboard
     </button>
   </div>
   

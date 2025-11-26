@@ -14,20 +14,42 @@
   
   let { dailyScores, onSelectDay }: Props = $props();
   
-  // FIX 1: Defensive Filtering für valide Scores
+  // FIX 1: Defensive Filtering für valide Scores + aufsteigend sortiert
   let validScores = $derived(
     (dailyScores ?? [])
-      .filter((d) => typeof d.dailyScore === 'number' && !Number.isNaN(d.dailyScore))
+      .filter((d) => {
+        const score = getScoreValue(d);
+        const isValid = typeof score === 'number' && !Number.isNaN(score) && score >= 0;
+        if (!isValid) {
+          console.warn('⚠️ Filtered invalid score:', d);
+        }
+        return isValid;
+      })
       .slice()
-      .sort((a, b) => a.date.localeCompare(b.date))
+      .sort((a, b) => a.date.localeCompare(b.date)) // Chronologisch: älteste zuerst
   );
 
   let hasData = $derived(validScores.length > 0);
   
-  // Debug-Logging
+  // Helper: Extrahiert Score (auch bei snake_case)
+  function getScoreValue(day: DailyScore | any): number {
+    if (typeof day.dailyScore === 'number') return day.dailyScore;
+    if (typeof day.daily_score === 'number') {
+      console.warn('⚠️ Found daily_score instead of dailyScore');
+      return day.daily_score;
+    }
+    return 0;
+  }
+  
+  // Debug-Logging - ERWEITERT
   $effect(() => {
     console.log('📊 DailyTrendChart received:', dailyScores.length, 'entries');
     console.log('📊 Valid scores:', validScores.length);
+    if (validScores.length > 0) {
+      console.log('📊 First score:', validScores[0]);
+      console.log('📊 Last score:', validScores[validScores.length - 1]);
+      console.log('📊 All scores:', validScores.map(d => ({ date: d.date, score: getScoreValue(d) })));
+    }
   });
   
   function handleDayClick(date: string) {
@@ -41,21 +63,9 @@
     return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
   }
   
-  // FIX 2: Defensive Helper - extrahiert Score auch bei snake_case
+  // FIX 2: Unified Score Getter
   function getScore(day: DailyScore): number {
-    // Prüfe camelCase (korrekt)
-    if (typeof day.dailyScore === 'number') {
-      return day.dailyScore;
-    }
-    // Fallback: Prüfe snake_case (DB-Format)
-    const anyDay = day as any;
-    if (typeof anyDay.daily_score === 'number') {
-      console.warn('⚠️ Found daily_score (snake_case) instead of dailyScore (camelCase)');
-      return anyDay.daily_score;
-    }
-    // Fallback: 0
-    console.error('❌ No valid score found in:', day);
-    return 0;
+    return getScoreValue(day);
   }
   
   function getBarColor(score: number | null | undefined): string {
@@ -94,24 +104,24 @@
           <div class="border-t border-gray-200"></div>
         </div>
         
-        <!-- Bars -->
-        {#each validScores.slice().reverse() as day, index}
+        <!-- Bars - FIX: Zeige nur letzte 14 Tage, sortiere chronologisch -->
+        {#each validScores.slice(-14) as day, index}
           {@const score = getScore(day)}
-          {@const barHeight = Math.max(score, 8)}
+          {@const barHeightPercent = Math.max(score, 8)}
           <button
             onclick={() => handleDayClick(day.date)}
-            class="flex-1 flex flex-col items-center group cursor-pointer min-w-0 relative z-10 animate-fadeIn"
-            style="animation-delay: {index * 0.05}s;"
+            class="flex-1 flex flex-col items-center group cursor-pointer relative z-10 animate-fadeIn"
+            style="animation-delay: {index * 0.05}s; min-width: 20px;"
             title="{formatDate(day.date)}: {score} Punkte ({day.testCount} {day.testCount === 1 ? 'Test' : 'Tests'})"
           >
-            <!-- Bar - FIX 3: Defensive Rendering mit Min-Height -->
+            <!-- Bar - FIXED: Direkte Prozent-Berechnung (0-100 Score → 0-100% Height) -->
             <div 
               class="w-full {getBarColor(score)} rounded-t-lg transition-all duration-300 hover:opacity-90 shadow-sm group-hover:shadow-md"
-              style="height: {barHeight}%; min-height: 8px;"
+              style="height: {barHeightPercent}%; min-height: 8px;"
             ></div>
             
             <!-- Date Label -->
-            <div class="text-xs text-gray-500 mt-2 group-hover:text-brand-purple group-hover:font-semibold transition-colors whitespace-nowrap">
+            <div class="text-[10px] md:text-xs text-gray-500 mt-2 group-hover:text-brand-purple group-hover:font-semibold transition-colors whitespace-nowrap">
               {formatDate(day.date).split('.')[0]}
             </div>
           </button>

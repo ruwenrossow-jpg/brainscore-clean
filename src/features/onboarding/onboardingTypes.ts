@@ -20,6 +20,12 @@ export interface TrackingContext {
   time: string; // "HH:MM" im 24h-Format, 15-Minuten-Raster
 }
 
+export interface TestContextPreset {
+  label: string;
+  defaultTime: string;
+  icon?: string;
+}
+
 export interface OnboardingState {
   selectedGoals: UserGoal[];
   trackingContexts: TrackingContext[];
@@ -28,10 +34,16 @@ export interface OnboardingState {
 
 // Predefined context suggestions with default times
 export const CONTEXT_SUGGESTIONS_WITH_TIMES = [
-  { label: 'Vor dem Lernen / Arbeiten', defaultTime: '08:00' },
-  { label: 'Nach Social Media / Scrollen', defaultTime: '12:00' },
-  { label: 'Nach der Uni / Arbeit', defaultTime: '17:00' },
-  { label: 'Abends vor dem Schlafen', defaultTime: '21:30' }
+  { label: 'Morgens direkt nach dem Aufwachen', defaultTime: '07:00', icon: 'wb_sunny' },
+  { label: 'Vor dem Lernen / Arbeiten', defaultTime: '08:30', icon: 'school' },
+  { label: 'Nach intensiver Bildschirmzeit', defaultTime: '11:00', icon: 'devices' },
+  { label: 'Nach Social Media / Scrollen', defaultTime: '12:30', icon: 'smartphone' },
+  { label: 'Nach dem Mittagessen', defaultTime: '14:00', icon: 'restaurant' },
+  { label: 'Nachmittags nach der Uni / Arbeit', defaultTime: '17:00', icon: 'work' },
+  { label: 'Nach dem Sport / Training', defaultTime: '18:30', icon: 'fitness_center' },
+  { label: 'Abends vor dem Schlafen', defaultTime: '21:30', icon: 'bedtime' },
+  { label: 'Vor wichtigen Aufgaben / Prüfungen', defaultTime: '09:00', icon: 'task_alt' },
+  { label: 'Nach längeren Pausen / Freizeit', defaultTime: '16:00', icon: 'free_breakfast' }
 ] as const;
 
 // Legacy: Simple label list for backward compatibility

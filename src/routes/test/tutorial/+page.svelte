@@ -34,12 +34,10 @@
   <div class="absolute top-4 left-4 z-50">
     <button 
       onclick={() => goto('/dashboard')}
-      class="btn btn-ghost btn-sm touch-target group"
+      class="px-4 py-2 rounded-lg font-semibold text-sm transition-all border-2 border-gray-300 hover:border-brand-purple hover:bg-brand-purple/5 active:scale-95 min-h-[44px] inline-flex items-center gap-2"
     >
       <span class="material-symbols-outlined text-lg">arrow_back</span>
-      <span class="text-sm font-bold group-hover:text-brand-purple transition-colors">
-        Abbrechen
-      </span>
+      Abbrechen
     </button>
   </div>
 

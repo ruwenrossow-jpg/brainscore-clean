@@ -41,12 +41,12 @@
     goto('/dashboard');
   }
   
-  // Score-Label für Demo
+  // Score-Label für Demo (KEINE Emojis)
   let scoreLabel = $derived.by(() => {
-    if (demoScore >= 80) return '⚡ Hervorragend';
-    if (demoScore >= 60) return '👍 Gut';
-    if (demoScore >= 40) return '📊 Durchschnittlich';
-    return '📉 Übung macht den Meister';
+    if (demoScore >= 80) return 'Hervorragend';
+    if (demoScore >= 60) return 'Gut';
+    if (demoScore >= 40) return 'Durchschnittlich';
+    return 'Übung macht den Meister';
   });
   
   let scoreColor = $derived.by(() => {
@@ -59,12 +59,8 @@
 <div class="min-h-screen bg-white px-4 py-6 md:py-8 pwa-safe-screen">
   <div class="w-full max-w-2xl mx-auto">
     
-    <!-- Header -->
+    <!-- Header (kein Icon, kein Badge) -->
     <div class="text-center mb-6">
-      <div class="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border-2 border-blue-300 rounded-full mb-4">
-        <span class="material-symbols-outlined text-blue-600">school</span>
-        <span class="text-sm font-bold text-blue-900">Tutorial-Modus</span>
-      </div>
       <h1 class="text-2xl md:text-3xl font-black text-gray-900 mb-2">
         So sieht dein Ergebnis aus
       </h1>
@@ -96,7 +92,7 @@
             </div>
             <div class="mt-4 p-4 bg-purple-50 border-2 border-purple-300 rounded-xl">
               <p class="text-sm md:text-base font-bold text-purple-900 mb-2">
-                💡 Dein BrainScore
+                Dein BrainScore
               </p>
               <p class="text-sm text-purple-800">
                 Hier siehst du später deinen BrainScore (0–100). 
@@ -134,7 +130,7 @@
             </div>
             <div class="mt-4 p-4 bg-purple-50 border-2 border-purple-300 rounded-xl">
               <p class="text-sm md:text-base font-bold text-purple-900 mb-2">
-                📈 Verlauf über Tage
+                Verlauf über Tage
               </p>
               <p class="text-sm text-purple-800">
                 Hier kannst du später sehen, wie sich dein Fokus über mehrere Tage entwickelt. 
@@ -147,27 +143,22 @@
         <!-- Callout 3: Screentime/Context Card (Mock) -->
         <div class="relative">
           <div class="p-4 bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl border-2 border-purple-200">
-            <div class="flex items-start gap-3 mb-3">
-              <span class="material-symbols-outlined text-2xl text-brand-purple">
-                phone_android
-              </span>
-              <div class="flex-1">
-                <p class="text-sm font-bold text-gray-900">Handynutzung & Kontext</p>
-                <p class="text-xs text-gray-600">Nach jedem Test</p>
-              </div>
+            <div class="mb-3">
+              <p class="text-sm font-bold text-gray-900">Handynutzung & Kontext</p>
+              <p class="text-xs text-gray-600">Nach jedem Test</p>
             </div>
             
             <div class="space-y-2 text-sm text-gray-700">
               <div class="flex justify-between">
-                <span>📱 Screentime heute</span>
+                <span>Screentime heute</span>
                 <span class="font-mono font-bold">3h 24min</span>
               </div>
               <div class="flex justify-between">
-                <span>🔓 Entsperrt</span>
+                <span>Entsperrt</span>
                 <span class="font-mono font-bold">47×</span>
               </div>
               <div class="flex justify-between">
-                <span>📍 Situation</span>
+                <span>Situation</span>
                 <span class="font-bold">Nach der Uni</span>
               </div>
             </div>
@@ -182,7 +173,7 @@
             </div>
             <div class="mt-4 p-4 bg-purple-50 border-2 border-purple-300 rounded-xl">
               <p class="text-sm md:text-base font-bold text-purple-900 mb-2">
-                📱 Screentime-Eingabe
+                Screentime-Eingabe
               </p>
               <p class="text-sm text-purple-800">
                 Hier trägst du nach jedem Test kurz deine Handynutzung ein. 
@@ -200,11 +191,10 @@
     <div class="flex items-center justify-between mb-4">
       <button 
         onclick={prevCallout}
-        class="btn btn-ghost btn-sm"
+        class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-600 hover:text-gray-900 transition-colors"
         disabled={currentCallout === 0}
       >
-        <span class="material-symbols-outlined">arrow_back</span>
-        Zurück
+        ← Zurück
       </button>
       
       <div class="flex gap-2">
@@ -216,10 +206,9 @@
       {#if currentCallout < totalCallouts - 1}
         <button 
           onclick={nextCallout}
-          class="btn btn-ghost btn-sm"
+          class="px-4 py-2 rounded-lg text-sm font-semibold text-gray-600 hover:text-gray-900 transition-colors"
         >
-          Weiter
-          <span class="material-symbols-outlined">arrow_forward</span>
+          Weiter →
         </button>
       {:else}
         <button 
@@ -227,7 +216,6 @@
           class="btn-gradient-primary px-6 h-10 text-sm font-black"
         >
           Verstanden
-          <span class="material-symbols-outlined ml-1">check</span>
         </button>
       {/if}
     </div>
@@ -237,9 +225,8 @@
       <div class="text-center mt-6">
         <button
           onclick={finishTutorial}
-          class="btn-gradient-primary w-full h-14 text-lg font-black"
+          class="btn-gradient-primary w-full h-14 text-base md:text-lg font-black"
         >
-          <span class="material-symbols-outlined mr-2">dashboard</span>
           Zum Dashboard
         </button>
         <p class="text-xs text-gray-500 mt-3">

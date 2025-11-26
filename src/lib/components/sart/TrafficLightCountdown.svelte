@@ -23,11 +23,11 @@
   let phase = $state<1 | 2 | 3>(1);
   
   onMount(() => {
-    // Phase 1: Rot (1000ms)
+    // Phase 1: Rot (1200ms - langsamer für Tutorial-Komfort)
     const timer1 = setTimeout(() => {
       phase = 2;
       
-      // Phase 2: Gelb (1000ms)
+      // Phase 2: Gelb (1200ms)
       const timer2 = setTimeout(() => {
         phase = 3;
         
@@ -37,10 +37,10 @@
         }, 1000);
         
         return () => clearTimeout(timer3);
-      }, 1000);
+      }, 1200);
       
       return () => clearTimeout(timer2);
-    }, 1000);
+    }, 1200);
     
     return () => clearTimeout(timer1);
   });
