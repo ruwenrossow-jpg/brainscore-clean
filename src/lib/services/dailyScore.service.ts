@@ -259,19 +259,11 @@ export async function syncDailyScoreForDate(
  * FIX: Explizite Konvertierung von snake_case zu camelCase
  */
 function rowToDailyScore(row: DailyScoreRow): DailyScore {
-  const result: DailyScore = {
+  return {
     date: row.date,
     dailyScore: row.daily_score,  // DB: daily_score → dailyScore
     testCount: row.test_count,     // DB: test_count → testCount
     firstTestAt: row.first_test_at || undefined,
     lastTestAt: row.last_test_at || undefined
   };
-  
-  // FIX: Debug-Logging für Datenpfad-Validierung
-  console.log('📊 rowToDailyScore conversion:', {
-    input: { date: row.date, daily_score: row.daily_score, test_count: row.test_count },
-    output: { date: result.date, dailyScore: result.dailyScore, testCount: result.testCount }
-  });
-  
-  return result;
 }

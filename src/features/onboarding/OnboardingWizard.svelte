@@ -281,13 +281,21 @@
         <!-- Step 0: Welcome Intro -->
         {#if currentStep === 0}
           <WelcomeIntroStep />
-          <div class="mt-6">
+          <div class="mt-6 space-y-3">
             <button 
               onclick={nextStep} 
               class="btn-gradient-primary w-full h-12 md:h-14 text-lg md:text-xl font-black"
             >
               Weiter <span class="ml-2">→</span>
             </button>
+            <div class="text-center">
+              <button
+                onclick={() => goto('/')}
+                class="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                ← Zurück zur Startseite
+              </button>
+            </div>
           </div>
         {/if}
         
@@ -455,7 +463,7 @@
                   class="checkbox checkbox-primary mt-0.5"
                 />
                 <label for="emailConsent" class="flex-1 text-sm text-gray-900 cursor-pointer">
-                  <span class="font-bold">Ich möchte sonntags per E-Mail eine kurze Zusammenfassung der aktuellen Forschungsergebnisse und Erkenntnisse aus BrainrotAI erhalten.</span>
+                  <span class="font-bold">Ich möchte regelmäßig per E-Mail eine kurze Zusammenfassung der aktuellen Forschungsergebnisse und Erkenntnisse aus BrainrotAI erhalten.</span>
                   <span class="block text-xs text-gray-600 mt-1">Optional. Jederzeit änderbar in den Einstellungen.</span>
                 </label>
               </div>

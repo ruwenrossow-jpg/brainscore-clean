@@ -124,7 +124,7 @@
         disabled={isLoading}
       />
       <span class="label-text text-sm text-gray-700 leading-relaxed">
-        Ich möchte <strong class="text-gray-900">sonntags per E-Mail</strong> eine kurze Zusammenfassung der aktuellen Forschungsergebnisse und Erkenntnisse aus BrainrotAI erhalten.
+        Ich möchte <strong class="text-gray-900">regelmäßig per E-Mail</strong> eine kurze Zusammenfassung der aktuellen Forschungsergebnisse und Erkenntnisse aus BrainrotAI erhalten.
       </span>
     </label>
     <p class="text-xs text-gray-500 mt-2 px-3">
