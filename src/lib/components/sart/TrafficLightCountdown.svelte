@@ -47,8 +47,8 @@
 </script>
 
 <!-- 
-  POSITION: Diese Ampel erscheint absichtlich an der Stelle des späteren Reaktionsfeldes.
-  ZWECK: Nutzer sehen schon im Countdown, wo später geklickt wird (bessere Orientierung).
+  POSITION: Diese Ampel erscheint im Zentrum der Stimulus-Box.
+  ZWECK: Single Focus Point - Nutzer starren während Countdown auf denselben Punkt wie beim Test.
 -->
 <div class="flex flex-col items-center justify-center">
   
@@ -77,7 +77,7 @@
   </div>
   
   <!-- Text -->
-  <p class="text-center text-gray-700 font-bold text-base md:text-lg mb-4">
+  <p class="text-center text-gray-700 font-bold text-base md:text-lg">
     {#if phase === 1}
       Bereit machen...
     {:else if phase === 2}
@@ -87,9 +87,9 @@
     {/if}
   </p>
   
-  <!-- Hinweis-Text (wo später Reaktionsfeld ist) -->
-  <p class="text-center text-sm text-gray-600 max-w-xs">
-    Gleich startet der Test – dann tippst du hier, wenn <strong>KEINE 3</strong> angezeigt wird.
+  <!-- Hinweis-Text -->
+  <p class="text-center text-sm text-gray-600 max-w-xs mt-4">
+    Gleich startet der Test – dann tippst du <strong>unten</strong>, wenn <strong>KEINE 3</strong> angezeigt wird.
   </p>
   
 </div>

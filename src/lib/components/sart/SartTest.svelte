@@ -130,13 +130,11 @@
       </div>
     {/if}
 
-    <!-- Stimulus Area (Zahlen / Maske / Spinner) -->
+    <!-- Stimulus Area (Zahlen / Maske / Ampel) -->
     <div class="min-h-[320px] flex items-center justify-center my-8 p-12 bg-gray-50 rounded-2xl border border-gray-200 w-full shadow-inner">
       {#if testState === 'countdown'}
-        <!-- Countdown-Phase: Leerer Stimulus-Bereich oder Platzhalter -->
-        <div class="text-6xl font-black text-gray-300">
-          ●
-        </div>
+        <!-- COUNTDOWN-PHASE: Ampel-Animation im Zentrum der Stimulus-Box -->
+        <TrafficLightCountdown onComplete={handleCountdownComplete} />
       {:else if testState === 'running'}
         {#if showingMask}
           <div class="text-9xl font-black text-gray-300">
@@ -155,25 +153,19 @@
       {/if}
     </div>
 
-    <!-- Response Area (Ampel ODER Button - immer an derselben Stelle) -->
+    <!-- Response Area (Button - nur während Test aktiv) -->
     <div class="w-full mt-6 min-h-[6rem]">
-      {#if testState === 'countdown'}
-        <!-- COUNTDOWN: Ampel an Position des späteren Reaktionsfeldes -->
-        <TrafficLightCountdown onComplete={handleCountdownComplete} />
-      {:else}
-        <!-- TEST/FINISHED: Reaktionsfeld -->
-        <button 
-          class="btn-gradient-primary w-full h-24 text-2xl font-black transition-all duration-150 active:scale-95 active:shadow-lg"
-          class:opacity-50={testState !== 'running'}
-          class:cursor-not-allowed={testState !== 'running'}
-          class:hover:scale-105={testState === 'running'}
-          class:hover:shadow-purple-button-hover={testState === 'running'}
-          onclick={handleRespond}
-          disabled={testState !== 'running'}
-        >
-          Reagieren
-        </button>
-      {/if}
+      <button 
+        class="btn-gradient-primary w-full h-24 text-2xl font-black transition-all duration-150 active:scale-95 active:shadow-lg"
+        class:opacity-50={testState !== 'running'}
+        class:cursor-not-allowed={testState !== 'running'}
+        class:hover:scale-105={testState === 'running'}
+        class:hover:shadow-purple-button-hover={testState === 'running'}
+        onclick={handleRespond}
+        disabled={testState !== 'running'}
+      >
+        Reagieren
+      </button>
     </div>
 
   </div>
