@@ -27,6 +27,7 @@
   import WelcomeIntroStep from './WelcomeIntroStep.svelte';
   import ContextAndTimeStep from './ContextAndTimeStep.svelte';
   import PwaHintStep from './PwaHintStep.svelte';
+  import OnboardingNavBar from '$lib/components/onboarding/OnboardingNavBar.svelte';
   import { 
     USER_GOAL_LABELS,
     type UserGoal,
@@ -320,19 +321,11 @@
                 onkeydown={(e) => e.key === 'Enter' && nextStep()}
               />
             </div>
-            <div class="flex gap-3">
-              <button onclick={prevStep} class="btn-secondary flex-1 h-12 md:h-14 text-sm md:text-base font-bold">
-                <span class="material-symbols-outlined">arrow_back</span>
-                Zurück
-              </button>
-              <button 
-                onclick={nextStep} 
-                class="btn-gradient-primary flex-1 h-12 md:h-14 text-lg md:text-xl font-black"
-                disabled={!userName.trim()}
-              >
-                Weiter <span class="ml-2">→</span>
-              </button>
-            </div>
+            <OnboardingNavBar 
+              onBack={prevStep}
+              onNext={nextStep}
+              nextDisabled={!userName.trim()}
+            />
           </div>
         {/if}
         
@@ -376,19 +369,11 @@
               {selectedGoals.length} von 3 ausgewählt
             </div>
             
-            <div class="flex gap-3 md:gap-4">
-              <button onclick={prevStep} class="btn-secondary flex-1 h-12 md:h-14 text-sm md:text-base font-bold">
-                <span class="material-symbols-outlined">arrow_back</span>
-                Zurück
-              </button>
-              <button 
-                onclick={nextStep} 
-                class="btn-gradient-primary flex-1 h-12 md:h-14 text-base md:text-lg font-black"
-                disabled={selectedGoals.length === 0}
-              >
-                Weiter <span class="ml-2">→</span>
-              </button>
-            </div>
+            <OnboardingNavBar 
+              onBack={prevStep}
+              onNext={nextStep}
+              nextDisabled={selectedGoals.length === 0}
+            />
           </div>
         {/if}
         
@@ -399,18 +384,12 @@
             onContextsChange={handleContextsChange}
           />
           
-          <div class="flex gap-3 md:gap-4 mt-4 md:mt-6">
-            <button onclick={prevStep} class="btn-secondary flex-1 h-12 md:h-14 text-sm md:text-base font-bold">
-              <span class="material-symbols-outlined">arrow_back</span>
-              Zurück
-            </button>
-            <button 
-              onclick={nextStep} 
-              class="btn-gradient-primary flex-1 h-12 md:h-14 text-base md:text-lg font-black"
-              disabled={contexts.length === 0}
-            >
-              Weiter <span class="ml-2">→</span>
-            </button>
+          <div class="mt-4 md:mt-6">
+            <OnboardingNavBar 
+              onBack={prevStep}
+              onNext={nextStep}
+              nextDisabled={contexts.length === 0}
+            />
           </div>
         {/if}
         
@@ -476,41 +455,24 @@
               {/if}
             </div>
             
-            <div class="flex gap-3">
-              <button onclick={prevStep} class="btn-secondary flex-1 h-12 md:h-14 text-sm md:text-base font-bold">
-                <span class="material-symbols-outlined">arrow_back</span>
-                Zurück
-              </button>
-              <button 
-                onclick={nextStep} 
-                class="btn-gradient-primary flex-1 h-12 md:h-14 text-base md:text-lg font-black"
-                disabled={isRegistering}
-              >
-                {#if isRegistering}
-                  <span class="loading loading-spinner"></span>
-                  Wird erstellt...
-                {:else}
-                  Account erstellen <span class="ml-2">→</span>
-                {/if}
-              </button>
-            </div>
+            <OnboardingNavBar 
+              onBack={prevStep}
+              onNext={nextStep}
+              nextLabel={isRegistering ? 'Wird erstellt...' : 'Account erstellen'}
+              nextDisabled={isRegistering}
+            />
           </div>
         {/if}
         
         <!-- Step 5: PWA Tutorial -->
         {#if currentStep === 5}
           <PwaHintStep />
-          <div class="flex gap-3 mt-6">
-            <button onclick={prevStep} class="btn-secondary flex-1 h-12 md:h-14 text-sm md:text-base font-bold">
-              <span class="material-symbols-outlined">arrow_back</span>
-              Zurück
-            </button>
-            <button 
-              onclick={nextStep} 
-              class="btn-gradient-primary flex-1 h-12 md:h-14 text-base md:text-lg font-black"
-            >
-              Verstanden <span class="ml-2">→</span>
-            </button>
+          <div class="mt-6">
+            <OnboardingNavBar 
+              onBack={prevStep}
+              onNext={nextStep}
+              nextLabel="Verstanden"
+            />
           </div>
         {/if}
         
@@ -597,11 +559,11 @@
               </div>
             </div>
             
-            <div class="text-center">
-              <button onclick={prevStep} class="btn btn-ghost btn-sm hover:bg-gray-100">
-                <span class="material-symbols-outlined text-sm">arrow_back</span>
-                Zurück
-              </button>
+            <div class="mt-6">
+              <OnboardingNavBar 
+                onBack={prevStep}
+                showNext={false}
+              />
             </div>
           </div>
         {/if}
