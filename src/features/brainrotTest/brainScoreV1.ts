@@ -1,8 +1,11 @@
 /**
  * BrainScore v1 - Composite Score Calculation
  * 
+ * Referenz: docs/master/test-logic.md (ehemals brainrot-sart-short-v1_brainscore-v1.md)
+ * Abschnitt: "7. BrainScore v1 (0–100)"
+ * 
  * Implements the BrainScore v1 formula as defined in
- * docs/brainrot-sart-short-v1_brainscore-v1.md
+ * docs/master/test-logic.md
  * 
  * BrainScore v1 is a weighted composite score (0-100) combining:
  * - AccuracyScore (30%): Based on commission and omission errors

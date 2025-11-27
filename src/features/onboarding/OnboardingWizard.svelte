@@ -24,10 +24,11 @@
   import { onboarding } from './onboardingState';
   import { currentUser, isAuthenticated, auth } from '$lib/stores/auth.store';
   import { ProfileService } from '$lib/services/profile.service';
+  import { AuthService } from '$lib/services/auth.service';
   import WelcomeIntroStep from './WelcomeIntroStep.svelte';
   import ContextAndTimeStep from './ContextAndTimeStep.svelte';
   import PwaHintStep from './PwaHintStep.svelte';
-  import OnboardingNavBar from '$lib/components/onboarding/OnboardingNavBar.svelte';
+  import OnboardingNavBar from '$lib/components/layout/OnboardingNavBar.svelte';
   import { 
     USER_GOAL_LABELS,
     type UserGoal,
@@ -136,7 +137,50 @@
           return;
         }
         
+        // FIX: Nach erfolgreicher Registrierung Auth-Store aktualisieren
+        // Warte auf Supabase Session & Profile (mit aggressiver Retry-Logik)
+        console.log('⏳ Waiting for session and profile creation...');
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Lade Session & Profile mit Retry-Logik (bis zu 5 Versuche)
+        const { session: newSession } = await AuthService.getSession();
+        let newProfile = null;
+        
+        if (newSession?.user) {
+          console.log('✅ Session loaded, now loading profile...');
+          // Versuche Profile zu laden (mit bis zu 5 Versuchen à 1 Sekunde)
+          for (let i = 0; i < 5; i++) {
+            const { profile } = await AuthService.getProfile(newSession.user.id);
+            if (profile) {
+              newProfile = profile;
+              console.log(`✅ Profile loaded successfully on attempt ${i + 1}`);
+              break;
+            }
+            console.log(`⚠️ Profile not yet available, retry ${i + 1}/5...`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        } else {
+          console.error('❌ No session found after registration');
+          registrationError = 'Sitzung konnte nicht erstellt werden. Bitte lade die Seite neu und melde dich an.';
+          isRegistering = false;
+          return;
+        }
+        
+        if (!newProfile) {
+          console.error('❌ Profile still not available after 5 attempts (5 seconds wait)');
+          registrationError = 'Profil wird noch erstellt. Bitte warte einen Moment und lade dann die Seite neu.';
+          isRegistering = false;
+          return;
+        }
+        
+        // Hydrate auth store with session and profile
+        auth.hydrate(newSession, newProfile);
+        
+        // Wait for Svelte reactivity to settle (important for $currentUser to update)
+        await new Promise(resolve => setTimeout(resolve, 200));
+        
         registrationSuccess = true;
+        console.log('✅ Registration successful, auth store hydrated');
         // Continue to next step
       } catch (err) {
         registrationError = 'Registrierung fehlgeschlagen. Bitte versuche es erneut.';
@@ -202,8 +246,8 @@
   
   // Step 4: Complete onboarding and start first test
   async function startFirstTest() {
-    await completeOnboarding();
-    if (isSaving) return; // Fehler beim Speichern
+    const success = await completeOnboarding();
+    if (!success) return; // Fehler beim Speichern
     
     console.log('✅ Onboarding completed, starting first test...');
     goto('/test');
@@ -211,46 +255,82 @@
   
   // Step 4: Complete onboarding and go to dashboard
   async function goToDashboard() {
-    await completeOnboarding();
-    if (isSaving) return; // Fehler beim Speichern
+    const success = await completeOnboarding();
+    if (!success) return; // Fehler beim Speichern
     
     console.log('✅ Onboarding completed, redirecting to dashboard...');
     goto('/dashboard');
   }
   
   // Shared: Save onboarding data
-  async function completeOnboarding() {
-    if (!$currentUser) {
-      alert('Du musst eingeloggt sein, um fortzufahren.');
+  async function completeOnboarding(): Promise<boolean> {
+    // FIX: Lade Session direkt, verlasse dich nicht auf reaktiven $currentUser
+    // (Svelte reactivity kann verzögert sein nach hydrate())
+    console.log('💾 completeOnboarding: Starting...');
+    const { session: freshSession } = await AuthService.getSession();
+    
+    if (!freshSession?.user) {
+      console.error('❌ completeOnboarding: No valid session found');
+      alert('Sitzung abgelaufen oder ungültig. Bitte melde dich erneut an.');
       goto('/auth');
-      return;
+      return false;
     }
+    
+    const userId = freshSession.user.id;
+    console.log('✅ completeOnboarding: Valid session for user:', userId);
     
     isSaving = true;
     try {
       // Save profile (name + primary goal + email consent)
       const primaryGoal = selectedGoals[0] || 'unsure';
+      
+      console.log('💾 [COMPLETE ONBOARDING] Saving profile...', {
+        userId,
+        userName: userName.trim(),
+        primaryGoal,
+        selectedGoals,
+        contextsCount: contexts.length
+      });
+      
       const { success, error } = await ProfileService.upsertProfile(
-        $currentUser.id,
+        userId,
         userName.trim(),
         primaryGoal,
         emailConsentResearchUpdates
       );
       
       if (!success) {
-        throw new Error(error || 'Profile save failed');
+        console.error('❌ [COMPLETE ONBOARDING] Profile upsert failed:', error);
+        const errorMsg = error?.message || error?.toString() || 'Profile save failed';
+        throw new Error(errorMsg);
       }
+      
+      console.log('✅ [COMPLETE ONBOARDING] Profile saved successfully');
       
       // Save to onboarding store (for future use)
       onboarding.setGoals(selectedGoals);
       contexts.forEach(ctx => onboarding.addContext(ctx));
       onboarding.complete();
       
-      // Invalidate server cache to reload profile
+      // Invalidate server cache to reload profile with onboarding_completed: true
+      console.log('🔄 [COMPLETE ONBOARDING] Invalidating cache...');
       await invalidateAll();
+      
+      console.log('✅ [COMPLETE ONBOARDING] Onboarding completed, profile updated');
+      
+      // Reload profile in auth store to get updated onboarding_completed flag
+      const { profile: updatedProfile } = await AuthService.getProfile(userId);
+      if (updatedProfile) {
+        auth.hydrate(freshSession, updatedProfile);
+        console.log('✅ [COMPLETE ONBOARDING] Auth store updated with completed profile');
+      }
+      
+      return true;
     } catch (err) {
-      console.error('Failed to complete onboarding:', err);
-      alert('Fehler beim Speichern. Bitte versuche es erneut.');
+      console.error('❌ [COMPLETE ONBOARDING] Failed to complete onboarding:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Unbekannter Fehler';
+      alert(`Fehler beim Speichern des Profils:\n${errorMessage}\n\nBitte versuche es erneut oder lade die Seite neu.`);
+      return false;
     } finally {
       isSaving = false;
     }
@@ -284,6 +364,7 @@
           <WelcomeIntroStep />
           <div class="mt-6 space-y-3">
             <button 
+              type="button"
               onclick={nextStep} 
               class="btn-gradient-primary w-full h-12 md:h-14 text-lg md:text-xl font-black"
             >
@@ -291,6 +372,7 @@
             </button>
             <div class="text-center">
               <button
+                type="button"
                 onclick={() => goto('/')}
                 class="text-sm text-gray-500 hover:text-gray-700 transition-colors"
               >
@@ -532,9 +614,10 @@
               
               <!-- Tutorial CTA (Primär) -->
               <button
+                type="button"
                 onclick={async () => {
-                  await completeOnboarding();
-                  if (!isSaving) goto('/test/tutorial');
+                  const success = await completeOnboarding();
+                  if (success) goto('/test/tutorial');
                 }}
                 class="btn-gradient-primary w-full h-12 md:h-14 text-base md:text-lg font-black"
                 disabled={isSaving}
@@ -550,6 +633,7 @@
               <!-- Skip Link (Tertiary) -->
               <div class="text-center mt-4">
                 <button
+                  type="button"
                   onclick={goToDashboard}
                   class="text-sm text-gray-500 hover:text-gray-700 transition-colors"
                   disabled={isSaving}

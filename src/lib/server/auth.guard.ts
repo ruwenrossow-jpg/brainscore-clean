@@ -13,14 +13,25 @@ import type { RequestEvent } from '@sveltejs/kit';
 /**
  * Prüft ob User eingeloggt ist
  * Wirft redirect() wenn nicht → User wird zum Startscreen (/) weitergeleitet
+ * 
+ * FIX: Prüft auch ob Session gültig ist (nicht nur ob Cookie existiert)
  */
 export async function requireAuth(event: RequestEvent) {
   const session = await event.locals.getSession();
   
   if (!session) {
+    console.log('❌ requireAuth: No session, redirect to /');
     throw redirect(303, '/');
   }
   
+  // FIX: Prüfe ob Session auch wirklich gültig ist
+  // Alte/abgelaufene Sessions haben ein Cookie, aber keine gültige Session
+  if (!session.user || !session.user.id) {
+    console.log('❌ requireAuth: Invalid session (no user), redirect to /');
+    throw redirect(303, '/');
+  }
+  
+  console.log('✅ requireAuth: Valid session for user:', session.user.id);
   return session;
 }
 
@@ -28,34 +39,47 @@ export async function requireAuth(event: RequestEvent) {
  * Prüft ob User Onboarding abgeschlossen hat
  * Leitet zu /onboarding wenn nicht abgeschlossen
  * 
+ * WICHTIG:
+ * - requireAuth() wird ZUERST aufgerufen → leitet zu / bei ungültiger Session
+ * - Nur wenn Session gültig: Prüfe Profil
+ * - Kein Profil ODER nicht abgeschlossen → /onboarding
+ * 
  * OPTIMIERT:
  * - Nur ein DB-Call (Profile)
- * - Keine SART-Session Query (zu langsam)
- * - Verwendet cached Profile aus Layout wenn möglich
+ * - maybeSingle() verhindert Fehler bei fehlendem Profil
  */
 export async function requireOnboarding(event: RequestEvent) {
+  // STEP 1: Prüfe ob Session gültig ist (leitet zu / wenn nicht)
   const session = await requireAuth(event);
   
-  // Profile aus DB laden (oder aus parent Layout nutzen)
-  const { data: profile } = await event.locals.supabase
+  console.log('🔍 requireOnboarding: Checking profile for user:', session.user.id);
+  
+  // STEP 2: Lade Profil (maybeSingle = kein Fehler wenn nicht vorhanden)
+  const { data: profile, error } = await event.locals.supabase
     .from('profiles')
     .select('*')
     .eq('id', session.user.id)
-    .single();
+    .maybeSingle();
+  
+  if (error) {
+    console.error('❌ requireOnboarding: Error loading profile:', error);
+    console.log('➡️ requireOnboarding: Redirecting to /onboarding due to error');
+    throw redirect(303, '/onboarding');
+  }
   
   if (!profile) {
-    // Kein Profil → Onboarding nötig
-    console.log('⚠️ No profile found, redirecting to onboarding:', session.user.id);
+    console.log('⚠️ requireOnboarding: No profile found for user:', session.user.id);
+    console.log('➡️ requireOnboarding: Redirecting to /onboarding (needs profile creation)');
     throw redirect(303, '/onboarding');
   }
   
   if (!(profile as any).onboarding_completed) {
-    // Onboarding nicht abgeschlossen
-    console.log('⚠️ Onboarding incomplete, redirecting:', session.user.id);
+    console.log('⚠️ requireOnboarding: Profile exists but onboarding not completed');
+    console.log('➡️ requireOnboarding: Redirecting to /onboarding (needs completion)');
     throw redirect(303, '/onboarding');
   }
   
-  // ✅ Alles OK
+  console.log('✅ requireOnboarding: Profile complete, allowing access');
   return { session, profile };
 }
 

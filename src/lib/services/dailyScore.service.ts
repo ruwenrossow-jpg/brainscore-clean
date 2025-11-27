@@ -191,6 +191,8 @@ export async function syncDailyScoreForDate(
     const startOfDay = `${date}T00:00:00`;
     const endOfDay = `${date}T23:59:59`;
     
+    console.log('🔄 [SYNC DAILY] Fetching sessions for date:', { userId, date, startOfDay, endOfDay });
+    
     const { data: sessions, error: sessionsError } = await supabase
       .from('sart_sessions')
       .select('id, created_at, user_id, brain_score')
@@ -200,11 +202,21 @@ export async function syncDailyScoreForDate(
       .order('created_at', { ascending: true });
     
     if (sessionsError) {
-      console.error('Error fetching sessions for date:', sessionsError);
+      console.error('❌ [SYNC DAILY] Error fetching sessions for date:', sessionsError);
       return { success: false, error: sessionsError.message };
     }
     
+    console.log('📥 [SYNC DAILY] Found sessions:', {
+      count: sessions?.length || 0,
+      sessions: sessions?.map((s: any) => ({
+        id: s.id,
+        createdAt: s.created_at,
+        brainScore: s.brain_score
+      }))
+    });
+    
     if (!sessions || sessions.length === 0) {
+      console.log('⚠️ [SYNC DAILY] No sessions found - cleaning up daily_score entry');
       // Keine Tests an diesem Tag - lösche ggf. vorhandenen DailyScore
       const { error: deleteError } = await supabase
         .from('daily_scores')
@@ -213,7 +225,7 @@ export async function syncDailyScoreForDate(
         .eq('date', date);
       
       if (deleteError) {
-        console.error('Error deleting empty daily score:', deleteError);
+        console.error('❌ [SYNC DAILY] Error deleting empty daily score:', deleteError);
         return { success: false, error: deleteError.message };
       }
       
@@ -228,28 +240,33 @@ export async function syncDailyScoreForDate(
       (a: any, b: any) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
     
+    const dailyScorePayload = {
+      user_id: userId,
+      date,
+      daily_score: dailyScore,
+      test_count: sessions.length,
+      first_test_at: (sortedSessions[0] as any).created_at,
+      last_test_at: (sortedSessions[sortedSessions.length - 1] as any).created_at
+    };
+    
+    console.log('💾 [SYNC DAILY] Upserting daily_score:', dailyScorePayload);
+    
     // Upsert DailyScore
     const { error: upsertError } = await supabase
       .from('daily_scores')
-      .upsert({
-        user_id: userId,
-        date,
-        daily_score: dailyScore,
-        test_count: sessions.length,
-        first_test_at: (sortedSessions[0] as any).created_at,
-        last_test_at: (sortedSessions[sortedSessions.length - 1] as any).created_at
-      } as any, {
+      .upsert(dailyScorePayload as any, {
         onConflict: 'user_id,date'
       });
     
     if (upsertError) {
-      console.error('Error upserting daily score for date:', upsertError);
+      console.error('❌ [SYNC DAILY] Error upserting daily score for date:', upsertError);
       return { success: false, error: upsertError.message };
     }
     
+    console.log('✅ [SYNC DAILY] Daily score synced successfully');
     return { success: true, error: null };
   } catch (err) {
-    console.error('Unexpected error syncing daily score for date:', err);
+    console.error('❌ [SYNC DAILY] Unexpected error syncing daily score for date:', err);
     return { success: false, error: 'Unexpected error' };
   }
 }

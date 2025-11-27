@@ -1,6 +1,10 @@
 <script lang="ts">
   /**
    * BaseCard - Wiederverwendbare Card-Komponente
+   * 
+   * ⚠️ DEPRECATED: Diese Komponente wird durch src/lib/components/ui/Card.svelte ersetzt.
+   * Referenz: docs/master/design-system.md, Abschnitt "4. Karten-Typen (Cards)"
+   * 
    * WARUM? DRY-Prinzip, konsistentes Design
    */
   

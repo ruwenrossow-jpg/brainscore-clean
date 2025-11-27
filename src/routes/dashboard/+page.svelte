@@ -21,12 +21,20 @@
   let error = $state<string | null>(null);
   
   onMount(async () => {
-    // Wait for auth state to be ready
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // FIX: Auth-Check entfernt - wird server-side durch requireOnboarding guard gehandhabt
+    // Kurze Verzögerung, damit Auth-Store initialisiert ist
+    await new Promise(resolve => setTimeout(resolve, 50));
     
-    if (!$isAuthenticated || !$auth.user) {
-      console.log('⚠️ Dashboard requires authentication, redirecting to /auth');
-      goto('/auth');
+    // Fallback: Wenn Store noch nicht geladen, versuche nochmal
+    if (!$auth.user) {
+      console.log('⚠️ Auth store not ready, waiting...');
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+    
+    if (!$auth.user) {
+      console.error('❌ No user available, this should not happen after server guard');
+      error = 'Bitte melde dich erneut an';
+      loading = false;
       return;
     }
     

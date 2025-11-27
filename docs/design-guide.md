@@ -1,5 +1,13 @@
 # BrainrotAI – Design Guide
 
+> ⚠️ **DEPRECATED:** Dieses Dokument wurde durch das neue Masterdokument-System ersetzt.  
+> **Aktuelle Referenz:** [`docs/master/design-system.md`](./master/design-system.md)
+> 
+> Dieses Dokument bleibt zur historischen Referenz erhalten, gilt aber als **nicht mehr aktuell**.
+> Bitte nutze ab sofort ausschließlich die Masterdokumente in `docs/master/`.
+
+---
+
 ## 1. Brand & Tonalität
 
 ### **Zielgruppe**

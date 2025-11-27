@@ -34,24 +34,33 @@ export class AuthService {
       
       // Erstelle leeres Profil für neuen User
       // onboarding_completed: false → User muss Onboarding durchlaufen
+      // FIX: Warte auf Profile-Erstellung, um Race Conditions zu vermeiden
       if (data.user) {
         console.log('✅ User erstellt, erstelle initiales Profil...');
         
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: data.user.id,
-            name: credentials.name || 'Neuer Nutzer',
-            onboarding_completed: false,
-            data_consent: false,
-            email_consent_research_updates: credentials.emailConsentResearchUpdates || false
-          } as any);
-        
-        if (profileError) {
-          console.error('⚠️ Profil-Erstellung fehlgeschlagen:', profileError);
+        try {
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .insert({
+              id: data.user.id,
+              name: credentials.name || 'Neuer Nutzer',
+              onboarding_completed: false,
+              data_consent: false,
+              email_consent_research_updates: credentials.emailConsentResearchUpdates || false
+            } as any);
+          
+          if (profileError) {
+            // Profil existiert evtl. schon (duplicate key) - nicht kritisch
+            console.warn('⚠️ Profil-Erstellung fehlgeschlagen (evtl. existiert bereits):', profileError.message);
+          } else {
+            console.log('✅ Initiales Profil erstellt');
+          }
+          
+          // Kurze Verzögerung, damit Profil garantiert verfügbar ist
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (err) {
+          console.error('❌ Profile creation error:', err);
           // Nicht kritisch - User kann trotzdem fortfahren
-        } else {
-          console.log('✅ Initiales Profil erstellt');
         }
       }
       
@@ -64,6 +73,7 @@ export class AuthService {
 
   /**
    * Login: Bestehender User
+   * FIX: Stellt sicher, dass Profile existiert (für alte Accounts ohne Profile)
    */
   static async signIn(credentials: LoginCredentials) {
     try {
@@ -79,6 +89,38 @@ export class AuthService {
       console.log(`🔑 [AuthService] Supabase signInWithPassword: ${duration.toFixed(0)}ms`);
 
       if (error) throw error;
+      
+      // FIX: Prüfe ob Profile existiert, erstelle falls nicht vorhanden
+      if (data.user) {
+        console.log('✅ Login successful, checking profile...');
+        const { data: existingProfile, error: profileError } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', data.user.id)
+          .maybeSingle();
+        
+        if (!existingProfile && !profileError) {
+          console.log('⚠️ No profile found, creating one...');
+          // Erstelle fehlendes Profile (für alte Accounts)
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              id: data.user.id,
+              name: data.user.email?.split('@')[0] || 'User',
+              onboarding_completed: false,
+              data_consent: false
+            } as any);
+          
+          if (insertError) {
+            console.error('❌ Profile creation failed:', insertError);
+          } else {
+            console.log('✅ Profile created successfully');
+          }
+        } else if (existingProfile) {
+          console.log('✅ Profile exists');
+        }
+      }
+      
       return { data, error: null };
     } catch (error) {
       console.error('❌ Sign in error:', error);

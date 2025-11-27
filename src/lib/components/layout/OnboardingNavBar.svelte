@@ -2,6 +2,8 @@
   /**
    * OnboardingNavBar - Einheitliche Navigation für ALLE Onboarding-Steps
    * 
+   * Referenz: docs/master/design-system.md, Abschnitt "6.1 Onboarding Navigation Bar"
+   * 
    * ZWECK:
    * Diese Komponente standardisiert die Navigation am unteren Rand aller Onboarding-Seiten,
    * um Style-Drift zu vermeiden und eine konsistente UX zu gewährleisten.

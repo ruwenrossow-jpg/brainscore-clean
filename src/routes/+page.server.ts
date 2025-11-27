@@ -1,30 +1,46 @@
 /**
  * Landing Page Server Load
  * 
- * ROUTING-LOGIK (v2.0):
- * Root (`/`) = Startscreen für Gäste, redirect zu `/dashboard` für eingeloggte Nutzer.
- * Onboarding nur über `/onboarding` erreichbar.
+ * ROUTING-LOGIK (v2.2 - FINAL FIX):
+ * Root (`/`) = Startscreen für ALLE User
+ * - Nicht eingeloggt: "Jetzt starten" (→ /onboarding) / "Bereits ein Konto?" (→ /auth)
+ * - Eingeloggt + kein Profile: "Jetzt starten" (→ /onboarding)
+ * - Eingeloggt + onboarding incomplete: "Onboarding fortsetzen" (→ /onboarding)
+ * - Eingeloggt + onboarding complete: "Test starten" (→ /test) / "Zum Dashboard" (→ /dashboard)
  * 
- * - Nicht eingeloggt → Landing Page/Startscreen zeigen
- * - Eingeloggt → Automatischer redirect zu /dashboard
- * 
- * Onboarding-Status wird NICHT mehr hier geprüft.
- * Eingeloggte User greifen auf /onboarding zu, wenn sie es explizit wählen.
+ * WHY? CTAs müssen zum tatsächlichen User-Status passen!
  */
 
 import type { PageServerLoad } from './$types';
-import { redirect } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async ({ locals }) => {
   const session = await locals.getSession();
   
   if (!session) {
-    // Nicht eingeloggt → Startscreen zeigen
-    console.log('🏠 Landing: No session, showing landing page');
-    return {};
+    console.log('🏠 Landing: No session');
+    return { session: null, profile: null };
   }
   
-  // Eingeloggt → Direkt zum Dashboard
-  console.log('➡️ Landing: User logged in, redirect to /dashboard');
-  throw redirect(303, '/dashboard');
+  // Lade Profile um korrekten Status zu kennen
+  let profile = null;
+  try {
+    const { data } = await locals.supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', session.user.id)
+      .maybeSingle();
+    profile = data;
+    
+    if (!profile) {
+      console.log('🏠 Landing: User logged in, but NO PROFILE → needs onboarding');
+    } else if (!profile.onboarding_completed) {
+      console.log('🏠 Landing: User logged in, onboarding incomplete');
+    } else {
+      console.log('🏠 Landing: User logged in, onboarding complete');
+    }
+  } catch (err) {
+    console.error('❌ Landing: Profile load error:', err);
+  }
+  
+  return { session, profile };
 };

@@ -2,6 +2,9 @@
   /**
    * BaseButton - Einheitliches Button-Styling
    * 
+   * ⚠️ DEPRECATED: Diese Komponente wird durch src/lib/components/ui/Button.svelte ersetzt.
+   * Referenz: docs/master/design-system.md, Abschnitt "5. Buttons & CTAs"
+   * 
    * WICHTIG: Unterstützt sowohl Form-Submission als auch Click-Handler
    * - Wenn in <form>: type="submit" für Form-Submission
    * - Wenn onclick gegeben: preventDefault + custom handler

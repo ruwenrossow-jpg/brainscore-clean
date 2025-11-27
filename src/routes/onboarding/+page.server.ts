@@ -15,13 +15,18 @@ export const load: PageServerLoad = async ({ locals }) => {
   const session = await locals.getSession();
   
   // Profile laden wenn eingeloggt (optional)
+  // FIX: maybeSingle() statt single() - nach fresh signup existiert Profil evtl. noch nicht
   let profile = null;
   if (session?.user) {
-    const { data } = await locals.supabase
+    const { data, error } = await locals.supabase
       .from('profiles')
       .select('*')
       .eq('id', session.user.id)
-      .single();
+      .maybeSingle();
+    
+    if (error) {
+      console.warn('⚠️ Profile load in onboarding failed:', error.message);
+    }
     profile = data;
   }
   

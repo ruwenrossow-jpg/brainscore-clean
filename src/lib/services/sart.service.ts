@@ -81,8 +81,21 @@ export class SartService {
 
   /**
    * Speichert SART-Session in Supabase
-   * ⚠️ Erfordert userId - anonyme Sessions werden nicht mehr unterstützt
-   * @param metrics Test-Ergebnisse
+   * 
+   * FILTERREGELN (Stand: 2025-11):
+   * ✅ WIRD GESPEICHERT:
+   *    - Alle regulären Tests (normal mode)
+   *    - Alle authentifizierten User-Tests
+   *    - Auch "ungültige" Tests (isValid=false) werden gespeichert für Forschungszwecke
+   * 
+   * ❌ WIRD NICHT GESPEICHERT:
+   *    - Tutorial-Tests (TutorialSartTest.svelte speichert nicht in DB)
+   *    - Anonyme Tests (userId = null)
+   * 
+   * WICHTIG: Diese Funktion filtert NICHTS - alle übergebenen Tests landen in der DB!
+   * Filter für Dashboard/Anzeige erfolgen später im Fetch-Layer (aktuell: KEINE Filter aktiv)
+   * 
+   * @param metrics Test-Ergebnisse (inkl. isValid Flag für spätere Analyse)
    * @param userId User-ID (erforderlich)
    * @returns Session-ID oder null bei Fehler
    */
@@ -96,36 +109,61 @@ export class SartService {
       return null;
     }
     
+    // DEBUG: Log test details before save
+    console.log('🧪 [SAVE TEST] Starting save operation', {
+      userId,
+      brainScore: metrics.score,
+      commissionErrors: metrics.commissionErrors,
+      omissionErrors: metrics.omissionErrors,
+      isValid: metrics.isValid,
+      invalidReason: metrics.invalidReason,
+      timestamp: new Date().toISOString()
+    });
+    
     try {
+      const payload = {
+        user_id: userId,
+        commission_errors: metrics.commissionErrors,
+        omission_errors: metrics.omissionErrors,
+        go_count: metrics.goTrialsCount,
+        nogo_count: metrics.noGoTrialsCount,
+        mean_rt_ms: metrics.meanReactionTimeMs,
+        sd_rt_ms: metrics.sdReactionTimeMs,
+        brain_score: metrics.score,
+      };
+      
+      console.log('🧪 [SAVE TEST] Insert payload:', payload);
+      
       const { data, error } = await supabase
         .from('sart_sessions')
-        .insert({
-          user_id: userId,
-          commission_errors: metrics.commissionErrors,
-          omission_errors: metrics.omissionErrors,
-          go_count: metrics.goTrialsCount,
-          nogo_count: metrics.noGoTrialsCount,
-          mean_rt_ms: metrics.meanReactionTimeMs,
-          sd_rt_ms: metrics.sdReactionTimeMs,
-          brain_score: metrics.score,
-        } as any)
-        .select('id')
+        .insert(payload as any)
+        .select('id, created_at, brain_score')
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [SAVE TEST] Insert failed:', error);
+        throw error;
+      }
       
       const sessionId = (data as any)?.id || null;
+      
+      console.log('✅ [SAVE TEST] Insert successful:', {
+        sessionId,
+        createdAt: (data as any)?.created_at,
+        brainScore: (data as any)?.brain_score
+      });
       
       // 🔄 Auto-sync DailyScore for today after test completion
       if (sessionId && userId) {
         const today = new Date().toISOString().split('T')[0];
+        console.log('🔄 [SAVE TEST] Syncing daily score for:', today);
         await syncDailyScoreForDate(userId, today);
-        console.log('✅ DailyScore synced for today:', today);
+        console.log('✅ [SAVE TEST] DailyScore synced for today:', today);
       }
       
       return sessionId;
     } catch (error) {
-      console.error('❌ Error saving SART session:', error);
+      console.error('❌ [SAVE TEST] Error saving SART session:', error);
       return null;
     }
   }

@@ -11,6 +11,15 @@ import { STATS_WINDOWS, AGGREGATION_METHOD } from '$lib/config/scoring';
 /**
  * Aggregiert Test-Sessions zu DailyScores
  * 
+ * FILTERREGELN (Stand: 2025-11):
+ * ✅ ALLE übergebenen Sessions werden aggregiert - KEINE Filter aktiv!
+ * - Keine Filter auf isValid, isDemo, validTrialRatio etc.
+ * - Alle Sessions mit brain_score werden berücksichtigt
+ * - Tutorial-Tests landen gar nicht erst hier (werden nicht in DB gespeichert)
+ * 
+ * WICHTIG: Diese Funktion ist "dump" - sie aggregiert was sie bekommt.
+ * Filter müssen VOR dem Aufruf angewandt werden (aktuell: keine Filter aktiv)
+ * 
  * @param sessions - Liste aller Test-Sessions
  * @returns Array von DailyScore-Objekten, sortiert nach Datum (neueste zuerst)
  */

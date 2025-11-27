@@ -1,8 +1,11 @@
 /**
  * Brainrot-SART Short v1 - Test Configuration
  * 
+ * Referenz: docs/master/test-logic.md (ehemals brainrot-sart-short-v1_brainscore-v1.md)
+ * Abschnitt: "3. Testarchitektur: Brainrot-SART Short v1"
+ * 
  * This configuration defines all parameters for the Brainrot-SART Short v1 cognitive test
- * as specified in docs/brainrot-sart-short-v1_brainscore-v1.md
+ * as specified in docs/master/test-logic.md
  * 
  * Key Parameters:
  * - 60 trials total (continuous sequence, no visible blocks)

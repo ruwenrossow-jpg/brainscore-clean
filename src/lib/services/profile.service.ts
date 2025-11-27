@@ -67,23 +67,40 @@ export class ProfileService {
     emailConsentResearchUpdates?: boolean
   ): Promise<{ success: boolean; error: any }> {
     try {
-      const { error } = await supabase
+      console.log('💾 [UPSERT PROFILE] Starting upsert:', {
+        userId,
+        name,
+        goal,
+        emailConsentResearchUpdates
+      });
+      
+      const payload = {
+        id: userId,
+        name: name,
+        goal: goal || null,
+        onboarding_completed: true,
+        data_consent: true,  // User hat Onboarding abgeschlossen = implizites Consent
+        email_consent_research_updates: emailConsentResearchUpdates || false
+      };
+      
+      console.log('💾 [UPSERT PROFILE] Payload:', payload);
+      
+      const { data, error } = await supabase
         .from('profiles')
-        .upsert({
-          id: userId,
-          name: name,
-          goal: goal || null,
-          onboarding_completed: true,
-          data_consent: true,  // User hat Onboarding abgeschlossen = implizites Consent
-          email_consent_research_updates: emailConsentResearchUpdates || false
-        } as any, {
+        .upsert(payload as any, {
           onConflict: 'id'  // Falls Profil schon existiert: Update
-        });
+        })
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [UPSERT PROFILE] Upsert failed:', error);
+        throw error;
+      }
+      
+      console.log('✅ [UPSERT PROFILE] Upsert successful:', data);
       return { success: true, error: null };
     } catch (error) {
-      console.error('❌ Error upserting profile:', error);
+      console.error('❌ [UPSERT PROFILE] Error upserting profile:', error);
       return { success: false, error };
     }
   }
