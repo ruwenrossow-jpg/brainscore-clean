@@ -43,7 +43,7 @@ export async function getDashboardData(
 
     // FIX: Fallback auf direkte Session-Aggregation wenn keine DailyScores
     if (!dailyScores || dailyScores.length === 0) {
-      console.log('⚠️ No daily_scores found, falling back to direct session aggregation');
+      console.warn('⚠️ No daily_scores found, falling back to session aggregation');
       dailyScores = await aggregateFromSessions(userId);
     }
     
@@ -58,18 +58,6 @@ export async function getDashboardData(
       dailyScores, 
       STATS_WINDOWS.twoWeeks
     );
-
-    // FIX: Debug-Logging für Datenpfad-Validierung
-    console.log('📊 getDashboardData - twoWeekTrend:', {
-      totalDailyScores: dailyScores.length,
-      twoWeekTrendLength: twoWeekTrend.length,
-      firstTrendScore: twoWeekTrend.length > 0 ? {
-        date: twoWeekTrend[0].date,
-        dailyScore: twoWeekTrend[0].dailyScore,
-        testCount: twoWeekTrend[0].testCount,
-        hasDailyScore: 'dailyScore' in twoWeekTrend[0]
-      } : 'no data'
-    });
     
     const dashboardData: DashboardData = {
       today: {
@@ -94,8 +82,6 @@ export async function getDashboardData(
  */
 async function aggregateFromSessions(userId: string): Promise<DailyScore[]> {
   try {
-    console.log('📊 Aggregating from sessions for user:', userId);
-    
     // Hole alle Sessions der letzten 30 Tage
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -108,16 +94,13 @@ async function aggregateFromSessions(userId: string): Promise<DailyScore[]> {
       .order('created_at', { ascending: true });
     
     if (error) {
-      console.error('Error fetching sessions:', error);
+      console.error('Error fetching sessions for aggregation:', error);
       return [];
     }
     
     if (!sessions || sessions.length === 0) {
-      console.log('📊 No sessions found for user');
       return [];
     }
-    
-    console.log(`📊 Found ${sessions.length} sessions, aggregating by date...`);
     
     // Gruppiere Sessions nach Datum
     const sessionsByDate = new Map<string, Array<{ brain_score: number; created_at: string }>>();
@@ -159,14 +142,7 @@ async function aggregateFromSessions(userId: string): Promise<DailyScore[]> {
     }
     
     // Sortiere nach Datum absteigend (neueste zuerst)
-    const sorted = dailyScores.sort((a, b) => b.date.localeCompare(a.date));
-    
-    console.log(`📊 Aggregated ${sorted.length} daily scores from sessions`);
-    if (sorted.length > 0) {
-      console.log('📊 First score:', sorted[0]);
-    }
-    
-    return sorted;
+    return dailyScores.sort((a, b) => b.date.localeCompare(a.date));
   } catch (err) {
     console.error('Error aggregating from sessions:', err);
     return [];

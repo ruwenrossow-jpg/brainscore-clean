@@ -19,11 +19,7 @@
     (dailyScores ?? [])
       .filter((d) => {
         const score = getScoreValue(d);
-        const isValid = typeof score === 'number' && !Number.isNaN(score) && score >= 0;
-        if (!isValid) {
-          console.warn('⚠️ Filtered invalid score:', d);
-        }
-        return isValid;
+        return typeof score === 'number' && !Number.isNaN(score) && score >= 0;
       })
       .slice()
       .sort((a, b) => a.date.localeCompare(b.date)) // Chronologisch: älteste zuerst
@@ -31,26 +27,12 @@
 
   let hasData = $derived(validScores.length > 0);
   
-  // Helper: Extrahiert Score (auch bei snake_case)
+  // Helper: Extrahiert Score (unterstützt dailyScore und daily_score)
   function getScoreValue(day: DailyScore | any): number {
     if (typeof day.dailyScore === 'number') return day.dailyScore;
-    if (typeof day.daily_score === 'number') {
-      console.warn('⚠️ Found daily_score instead of dailyScore');
-      return day.daily_score;
-    }
+    if (typeof day.daily_score === 'number') return day.daily_score;
     return 0;
   }
-  
-  // Debug-Logging - ERWEITERT
-  $effect(() => {
-    console.log('📊 DailyTrendChart received:', dailyScores.length, 'entries');
-    console.log('📊 Valid scores:', validScores.length);
-    if (validScores.length > 0) {
-      console.log('📊 First score:', validScores[0]);
-      console.log('📊 Last score:', validScores[validScores.length - 1]);
-      console.log('📊 All scores:', validScores.map(d => ({ date: d.date, score: getScoreValue(d) })));
-    }
-  });
   
   function handleDayClick(date: string) {
     if (onSelectDay) {
