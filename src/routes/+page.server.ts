@@ -21,7 +21,7 @@ export const load: PageServerLoad = async ({ locals }) => {
   
   console.log('🔍 Landing: Session found, checking profile...');
   
-  // Eingeloggt: Prüfe Onboarding-Status (mit Timeout)
+  // Eingeloggt: Prüfe Onboarding-Status
   try {
     const { data: profile, error } = await locals.supabase
       .from('profiles')
@@ -30,35 +30,34 @@ export const load: PageServerLoad = async ({ locals }) => {
       .single();
     
     if (error) {
-      console.error('❌ Landing: Profile query error:', error.message);
-      // Bei DB-Fehler: User trotzdem durchlassen (graceful degradation)
+      console.error('❌ Landing: Profile query error:', error.message, error.code);
+      
+      // 🔧 FIX: Nur bei "Profile nicht gefunden" ins Onboarding leiten
       if (error.code === 'PGRST116') {
-        // Kein Profil gefunden
-        console.log('➡️ Landing: No profile, redirect to /onboarding');
+        // Kein Profil gefunden → neuer User → Onboarding
+        console.log('➡️ Landing: No profile found (PGRST116), redirect to /onboarding');
         throw redirect(303, '/onboarding');
       }
-      // Anderer Fehler (Timeout, etc.) → Dashboard mit Warning
-      console.error('⚠️ Landing: DB error, allowing access to dashboard');
+      
+      // 🔧 FIX: Bei anderen DB-Fehlern (Timeout, Connection, etc.)
+      // NICHT automatisch ins Onboarding leiten!
+      // Zeige Landing Page mit Auth-State → User kann manuell navigieren
+      console.error('⚠️ Landing: DB error, showing landing with auth state (no auto-redirect)');
+      return {}; // Landing Page wird angezeigt, $isAuthenticated = true
+    }
+    
+    // Profile exists - check onboarding status
+    if (profile && (profile as any).onboarding_completed === true) {
+      // Onboarding abgeschlossen → Dashboard
+      console.log('➡️ Landing: Onboarding complete, redirect to /dashboard');
       throw redirect(303, '/dashboard');
-    }
-    
-    if (!profile) {
-      // Kein Profil → Onboarding zeigen
-      console.log('➡️ Landing: No profile, redirect to /onboarding');
-      throw redirect(303, '/onboarding');
-    }
-    
-    if (!(profile as any).onboarding_completed) {
-      // Profil existiert aber Onboarding nicht abgeschlossen
+    } else {
+      // Onboarding nicht abgeschlossen
       console.log('➡️ Landing: Onboarding incomplete, redirect to /onboarding');
       throw redirect(303, '/onboarding');
     }
-    
-    // Alles OK → Dashboard
-    console.log('➡️ Landing: Onboarding complete, redirect to /dashboard');
-    throw redirect(303, '/dashboard');
   } catch (err) {
-    // Catch redirect() throws
+    // Catch redirect() throws and rethrow
     throw err;
   }
 };

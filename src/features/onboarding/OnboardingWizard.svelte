@@ -70,8 +70,10 @@
     if (currentStep > 0) {
       currentStep = (currentStep - 1) as Step;
     } else {
-      // Bei Step 0 zurück zur Landing Page
-      goto('/');
+      // 🔧 FIX: Bei Step 0 zum Dashboard statt Landing
+      // (Landing würde sofort wieder ins Onboarding redirecten → Loop)
+      // User kann vom Dashboard aus abmelden wenn gewünscht
+      goto('/dashboard');
     }
   }
   
