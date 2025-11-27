@@ -13,15 +13,16 @@
   import { currentUser } from '$lib/stores/auth.store';
   import { ProfileService } from '$lib/services/profile.service';
   import ContextAndTimeStep from './ContextAndTimeStep.svelte';
+  import WelcomeIntroStep from './WelcomeIntroStep.svelte';
   import { 
     USER_GOAL_LABELS,
     type UserGoal,
     type TrackingContext
   } from './onboardingTypes';
   
-  type Step = 1 | 2 | 3 | 4;
+  type Step = 0 | 1 | 2 | 3 | 4;
   
-  let currentStep = $state<Step>(1);
+  let currentStep = $state<Step>(0);
   let userName = $state('');
   let selectedGoals = $state<UserGoal[]>([]);
   let contexts = $state<TrackingContext[]>([]);
@@ -66,8 +67,11 @@
   }
   
   function prevStep() {
-    if (currentStep > 1) {
+    if (currentStep > 0) {
       currentStep = (currentStep - 1) as Step;
+    } else {
+      // Bei Step 0 zurück zur Landing Page
+      goto('/');
     }
   }
   
@@ -156,7 +160,7 @@
     <!-- Progress Indicator -->
     <div class="mb-6 md:mb-8">
       <div class="flex items-center justify-center gap-2 mb-4">
-        {#each [1, 2, 3, 4] as step}
+        {#each [0, 1, 2, 3, 4] as step}
           <div class="w-2 h-2 rounded-full {currentStep === step ? 'bg-black' : currentStep > step ? 'bg-gray-400' : 'bg-gray-200'}"></div>
           {#if step < 4}
             <div class="w-8 h-0.5 bg-gray-300"></div>
@@ -164,7 +168,7 @@
         {/each}
       </div>
       <p class="text-center text-sm text-gray-600">
-        Schritt {currentStep} von 4
+        Schritt {currentStep + 1} von 5
       </p>
     </div>
 
@@ -172,18 +176,19 @@
     <div class="card bg-base-200 shadow-lg border border-gray-200">
       <div class="card-body">
         
-        <!-- Step 1: Welcome & Name -->
-        {#if currentStep === 1}
+        <!-- Step 0: Welcome Intro -->
+        {#if currentStep === 0}
+          <WelcomeIntroStep />
+        
+        <!-- Step 1: Name -->
+        {:else if currentStep === 1}
           <div class="space-y-6 md:space-y-8">
             <div class="text-center">
-              <h1 class="text-3xl md:text-4xl lg:text-5xl font-black text-gray-900 mb-4 md:mb-6 leading-tight">
-                WILLKOMMEN! LASS UNS DEINE <span class="text-gradient-hero">AUFMERKSAMKEIT</span> VERSTEHEN.
-              </h1>
-              <p class="text-gray-600 text-base md:text-lg mb-3 md:mb-4">
+              <h2 class="text-2xl md:text-3xl lg:text-4xl font-black text-gray-900 mb-3 md:mb-4 leading-tight">
+                Lass uns starten!
+              </h2>
+              <p class="text-gray-600 text-base md:text-lg">
                 In wenigen Minuten richten wir deinen persönlichen Fokus-Tracker ein.
-              </p>
-              <p class="text-sm text-gray-600">
-                Dauert nur 3–4 Minuten
               </p>
             </div>
             <div>
@@ -199,18 +204,10 @@
                 onkeydown={(e) => e.key === 'Enter' && nextStep()}
               />
             </div>
-            <button 
-              onclick={nextStep} 
-              class="btn-gradient-primary w-full h-12 md:h-14 text-lg md:text-xl font-black"
-              disabled={!userName.trim()}
-            >
-              Los geht's <span class="ml-2">→</span>
-            </button>
           </div>
-        {/if}
         
         <!-- Step 2: Goals Selection -->
-        {#if currentStep === 2}
+        {:else if currentStep === 2}
           <div class="space-y-4 md:space-y-6">
             <div>
               <h2 class="text-2xl md:text-3xl lg:text-4xl font-black text-gray-900 mb-2 md:mb-3">Deine Ziele</h2>
@@ -261,10 +258,9 @@
               </button>
             </div>
           </div>
-        {/if}
         
         <!-- Step 3: Context + Time Selection (Combined) -->
-        {#if currentStep === 3}
+        {:else if currentStep === 3}
           <ContextAndTimeStep 
             bind:contexts={contexts}
             onContextsChange={handleContextsChange}
@@ -283,10 +279,9 @@
               Weiter <span class="ml-2">→</span>
             </button>
           </div>
-        {/if}
         
         <!-- Step 4: Summary & Actions -->
-        {#if currentStep === 4}
+        {:else if currentStep === 4}
           <div class="space-y-4 md:space-y-6">
             <div>
               <h2 class="text-2xl md:text-3xl lg:text-4xl font-black text-gray-900 mb-2 md:mb-3">Alles bereit!</h2>
@@ -364,6 +359,24 @@
         {/if}
 
       </div>
+
+      <!-- Navigation Buttons (für Steps ohne eigene Buttons) -->
+      {#if currentStep === 0 || currentStep === 1}
+        <div class="card-actions flex gap-3 md:gap-4 mt-6">
+          <button onclick={prevStep} class="btn-secondary flex-1 h-12 md:h-14 text-sm md:text-base font-bold">
+            <span class="material-symbols-outlined">arrow_back</span>
+            Zurück
+          </button>
+          <button 
+            onclick={nextStep} 
+            class="btn-gradient-primary flex-1 h-12 md:h-14 text-sm md:text-base font-bold"
+            disabled={currentStep === 1 && !userName.trim()}
+          >
+            Weiter
+            <span class="material-symbols-outlined">arrow_forward</span>
+          </button>
+        </div>
+      {/if}
     </div>
 
   </div>
