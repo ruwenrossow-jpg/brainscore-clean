@@ -21,6 +21,7 @@
   let activeContextIds = $state<Set<string>>(new Set());
   let customLabel = $state('');
   let customTime = $state('08:00');
+  let showCustomInput = $state(false);
   
   // Check if a predefined context is already added
   function isContextActive(label: string): boolean {
@@ -65,9 +66,16 @@
     contexts = [...contexts, newContext];
     onContextsChange(contexts);
     
-    // Reset custom inputs
+    // Reset custom inputs and close
     customLabel = '';
     customTime = '08:00';
+    showCustomInput = false;
+  }
+  
+  // Toggle custom input
+  function toggleCustomInput() {
+    if (contexts.length >= 3) return;
+    showCustomInput = !showCustomInput;
   }
   
   // Update context time
@@ -154,52 +162,89 @@
         </div>
       </button>
     {/each}
-  </div>
-  
-  <!-- Custom Context Card -->
-  {#if contexts.length < 3}
-    <div class="p-4 md:p-5 rounded-xl md:rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50">
-      <div class="font-black text-base md:text-lg text-gray-900 mb-3">Eigene Situation hinzufügen</div>
+    
+    <!-- Custom Context Card (gleichwertig zu anderen Optionen) -->
+    {#if contexts.length < 3}
+      {@const isDisabled = contexts.length >= 3}
       
-      <div class="space-y-3">
-        <div>
-          <label for="custom-label" class="block text-xs font-semibold text-gray-700 mb-1">
-            Situation beschreiben:
-          </label>
-          <input
-            id="custom-label"
-            type="text"
-            bind:value={customLabel}
-            placeholder="z.B. 'Vor dem Training'"
-            class="input input-bordered w-full h-10 md:h-12 text-sm md:text-base font-medium rounded-xl bg-white border-gray-300 focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/20"
-            onkeydown={(e) => e.key === 'Enter' && addCustomContext()}
-          />
-        </div>
-        
-        <div>
-          <label for="custom-time" class="block text-xs font-semibold text-gray-700 mb-1">
-            Uhrzeit:
-          </label>
-          <input
-            id="custom-time"
-            type="time"
-            step="900"
-            bind:value={customTime}
-            class="input input-bordered w-full max-w-[180px] h-10 md:h-12 text-sm md:text-base font-mono bg-white"
-          />
-        </div>
-        
+      <div
+        class="w-full p-4 md:p-5 rounded-xl md:rounded-2xl border-2 transition-all {
+          showCustomInput
+            ? 'border-brand-purple bg-brand-purple/5 shadow-lg'
+            : isDisabled
+              ? 'border-gray-200 bg-gray-100 opacity-50'
+              : 'border-gray-200 hover:border-brand-purple/50 hover:bg-gray-50 cursor-pointer'
+        }"
+      >
         <button
-          onclick={addCustomContext}
-          class="btn-gradient-primary w-full h-10 md:h-12 text-sm md:text-base font-black"
-          disabled={!customLabel.trim()}
+          onclick={toggleCustomInput}
+          disabled={isDisabled}
+          class="w-full text-left"
         >
-          <span class="material-symbols-outlined mr-2">add</span>
-          Hinzufügen
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex-1">
+              <div class="font-black text-base md:text-lg text-gray-900 mb-1">Eigene Situation hinzufügen</div>
+              
+              {#if !showCustomInput}
+                <div class="text-sm text-gray-600">
+                  Beschreibe deine eigene Test-Situation
+                </div>
+              {/if}
+            </div>
+            
+            <div class="flex-shrink-0">
+              {#if showCustomInput}
+                <span class="material-symbols-outlined text-2xl md:text-3xl text-brand-purple">edit</span>
+              {:else}
+                <span class="material-symbols-outlined text-2xl md:text-3xl text-gray-500">add_circle</span>
+              {/if}
+            </div>
+          </div>
         </button>
+        
+        {#if showCustomInput}
+          <!-- Custom Input (expanded state) -->
+          <div class="mt-4 space-y-3">
+            <div>
+              <label for="custom-label" class="block text-xs font-semibold text-gray-700 mb-1">
+                Situation beschreiben:
+              </label>
+              <input
+                id="custom-label"
+                type="text"
+                bind:value={customLabel}
+                placeholder="z.B. 'Vor dem Training'"
+                class="input input-bordered w-full h-10 md:h-12 text-sm md:text-base font-medium rounded-xl bg-white border-gray-300 focus:border-brand-purple focus:ring-2 focus:ring-brand-purple/20"
+                onkeydown={(e) => e.key === 'Enter' && addCustomContext()}
+              />
+            </div>
+            
+            <div>
+              <label for="custom-time" class="block text-xs font-semibold text-gray-700 mb-1">
+                Uhrzeit:
+              </label>
+              <input
+                id="custom-time"
+                type="time"
+                step="900"
+                bind:value={customTime}
+                class="input input-bordered w-full max-w-[180px] h-10 md:h-12 text-sm md:text-base font-mono bg-white"
+              />
+            </div>
+            
+            <button
+              onclick={addCustomContext}
+              class="btn-gradient-primary w-full h-10 md:h-12 text-sm md:text-base font-black"
+              disabled={!customLabel.trim()}
+            >
+              <span class="material-symbols-outlined mr-2">add</span>
+              Hinzufügen
+            </button>
+          </div>
+        {/if}
       </div>
-    </div>
-  {/if}
+    {/if}
+  </div>
   
   <!-- Summary: Selected Contexts -->
   {#if contexts.length > 0}

@@ -28,9 +28,15 @@ export interface OnboardingState {
 
 // Predefined context suggestions with default times
 export const CONTEXT_SUGGESTIONS_WITH_TIMES = [
-  { label: 'Vor dem Lernen / Arbeiten', defaultTime: '08:00' },
+  { label: 'Nach dem Aufwachen', defaultTime: '07:30' },
+  { label: 'Vor dem Lernen / der Uni', defaultTime: '08:00' },
+  { label: 'Vor wichtigen Aufgaben', defaultTime: '09:00' },
+  { label: 'Am Wochenende', defaultTime: '11:00' },
   { label: 'Nach Social Media / Scrollen', defaultTime: '12:00' },
-  { label: 'Nach der Uni / Arbeit', defaultTime: '17:00' },
+  { label: 'Nach dem Mittagessen', defaultTime: '13:00' },
+  { label: 'Wenn du dich zerstreut fühlst', defaultTime: '14:00' },
+  { label: 'Nach einer Konzentrationsphase', defaultTime: '15:00' },
+  { label: 'Nach der Arbeit / Vorlesung', defaultTime: '17:00' },
   { label: 'Abends vor dem Schlafen', defaultTime: '21:30' }
 ] as const;
 
