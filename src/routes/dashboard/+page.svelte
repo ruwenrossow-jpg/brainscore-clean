@@ -13,7 +13,6 @@
   import { getDashboardData } from '$lib/services/dashboard.service';
   import { syncDailyScoresFromSessions } from '$lib/services/dailyScore.service';
   import { getScoreBand, getRelativeTimeString } from '$lib/config/scoring';
-  import DailyTrendChart from '$lib/components/dashboard/DailyTrendChart.svelte';
   import type { DashboardData } from '$lib/services/dashboard.service';
   
   let dashboardData = $state<DashboardData | null>(null);
@@ -244,19 +243,68 @@
             <div class="p-8">
               <h2 class="text-3xl font-black text-gray-900 mb-6"><span class="text-gradient-purple">Verlauf</span> (letzte 14 Tage)</h2>
               
-              <DailyTrendChart 
-                dailyScores={dashboardData.twoWeekTrend}
-                onSelectDay={handleDayClick}
-              />
-              
               {#if dashboardData.twoWeekTrend.length > 0}
-                <div class="mt-4 text-center">
+                <!-- Text-based trend list -->
+                <div class="space-y-2 mb-6">
+                  {#each dashboardData.twoWeekTrend as day, index (day.date)}
+                    {@const isToday = day.date === new Date().toISOString().split('T')[0]}
+                    {@const scoreBand = getScoreBand(day.dailyScore)}
+                    {@const dateObj = new Date(day.date)}
+                    {@const formattedDate = dateObj.toLocaleDateString('de-DE', { 
+                      weekday: 'short', 
+                      day: '2-digit', 
+                      month: '2-digit' 
+                    })}
+                    
+                    <button
+                      onclick={() => handleDayClick(day.date)}
+                      class="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer text-left"
+                      class:bg-purple-50={isToday}
+                      class:hover:bg-purple-100={isToday}
+                    >
+                      <div class="flex items-center gap-3">
+                        <div class="text-sm font-medium text-gray-700" class:font-bold={isToday}>
+                          {formattedDate}
+                          {#if isToday}
+                            <span class="badge badge-sm badge-primary text-white ml-2">Heute</span>
+                          {/if}
+                        </div>
+                      </div>
+                      
+                      <div class="flex items-center gap-3">
+                        <div class="text-2xl font-bold text-gray-900" class:text-brand-purple={isToday}>
+                          {day.dailyScore}
+                        </div>
+                        <div class="badge badge-sm text-white"
+                             class:badge-success={scoreBand.color === 'success'}
+                             class:badge-warning={scoreBand.color === 'warning'}
+                             class:badge-error={scoreBand.color === 'error'}>
+                          {scoreBand.label}
+                        </div>
+                        <div class="text-gray-400 text-xl">›</div>
+                      </div>
+                    </button>
+                  {/each}
+                </div>
+                
+                <div class="text-center">
                   <button 
                     class="btn-secondary w-full"
                     onclick={() => goto('/logbuch')}
                   >
                     Alle Tage anzeigen
                   </button>
+                </div>
+              {:else}
+                <!-- No data state -->
+                <div class="text-center py-8">
+                  <div class="text-gray-400 mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </div>
+                  <p class="text-gray-600 mb-2">In den letzten 14 Tagen wurden noch keine Tests gespeichert.</p>
+                  <p class="text-sm text-gray-500">Starte deinen ersten Test, um deinen Verlauf zu sehen.</p>
                 </div>
               {/if}
             </div>
