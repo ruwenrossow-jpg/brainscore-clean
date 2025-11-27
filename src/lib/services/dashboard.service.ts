@@ -14,6 +14,7 @@ import {
   filterDailyScoresByWindow 
 } from '$features/logbook/dailyScoreService';
 import { STATS_WINDOWS } from '$lib/config/scoring';
+import { supabase } from './supabase.client';
 
 export interface DashboardData {
   today: {
@@ -27,16 +28,23 @@ export interface DashboardData {
 
 /**
  * Holt alle Dashboard-Daten für einen User
+ * FIX: Fallback auf direkte Session-Aggregation wenn daily_scores leer
  */
 export async function getDashboardData(
   userId: string
 ): Promise<{ data: DashboardData | null; error: string | null }> {
   try {
     // 1. Hole alle DailyScores (letzte 30 Tage reichen)
-    const { data: dailyScores, error } = await fetchDailyScores(userId, 30);
+    let { data: dailyScores, error } = await fetchDailyScores(userId, 30);
     
-    if (error || !dailyScores) {
+    if (error) {
       return { data: null, error: error || 'Failed to fetch daily scores' };
+    }
+
+    // FIX: Fallback auf direkte Session-Aggregation wenn keine DailyScores
+    if (!dailyScores || dailyScores.length === 0) {
+      console.log('⚠️ No daily_scores found, falling back to direct session aggregation');
+      dailyScores = await aggregateFromSessions(userId);
     }
     
     // 2. Heute
@@ -50,6 +58,18 @@ export async function getDashboardData(
       dailyScores, 
       STATS_WINDOWS.twoWeeks
     );
+
+    // FIX: Debug-Logging für Datenpfad-Validierung
+    console.log('📊 getDashboardData - twoWeekTrend:', {
+      totalDailyScores: dailyScores.length,
+      twoWeekTrendLength: twoWeekTrend.length,
+      firstTrendScore: twoWeekTrend.length > 0 ? {
+        date: twoWeekTrend[0].date,
+        dailyScore: twoWeekTrend[0].dailyScore,
+        testCount: twoWeekTrend[0].testCount,
+        hasDailyScore: 'dailyScore' in twoWeekTrend[0]
+      } : 'no data'
+    });
     
     const dashboardData: DashboardData = {
       today: {
@@ -65,6 +85,91 @@ export async function getDashboardData(
   } catch (err) {
     console.error('Error getting dashboard data:', err);
     return { data: null, error: 'Unexpected error' };
+  }
+}
+
+/**
+ * FALLBACK: Aggregiert DailyScores direkt aus sart_sessions
+ * Wird verwendet wenn daily_scores Tabelle leer ist
+ */
+async function aggregateFromSessions(userId: string): Promise<DailyScore[]> {
+  try {
+    console.log('📊 Aggregating from sessions for user:', userId);
+    
+    // Hole alle Sessions der letzten 30 Tage
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const { data: sessions, error } = await supabase
+      .from('sart_sessions')
+      .select('id, created_at, brain_score')
+      .eq('user_id', userId)
+      .gte('created_at', thirtyDaysAgo.toISOString())
+      .order('created_at', { ascending: true });
+    
+    if (error) {
+      console.error('Error fetching sessions:', error);
+      return [];
+    }
+    
+    if (!sessions || sessions.length === 0) {
+      console.log('📊 No sessions found for user');
+      return [];
+    }
+    
+    console.log(`📊 Found ${sessions.length} sessions, aggregating by date...`);
+    
+    // Gruppiere Sessions nach Datum
+    const sessionsByDate = new Map<string, Array<{ brain_score: number; created_at: string }>>();
+    
+    for (const session of sessions) {
+      const date = session.created_at.split('T')[0]; // 'YYYY-MM-DD'
+      
+      if (!sessionsByDate.has(date)) {
+        sessionsByDate.set(date, []);
+      }
+      sessionsByDate.get(date)!.push({
+        brain_score: session.brain_score,
+        created_at: session.created_at
+      });
+    }
+    
+    // Berechne DailyScore für jeden Tag
+    const dailyScores: DailyScore[] = [];
+    
+    for (const [date, daySessions] of sessionsByDate.entries()) {
+      const scores = daySessions
+        .map((s) => s.brain_score)
+        .filter((v) => typeof v === 'number' && !Number.isNaN(v));
+      
+      if (scores.length === 0) continue;
+      
+      const avg = scores.reduce((sum, v) => sum + v, 0) / scores.length;
+      const sortedSessions = [...daySessions].sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+      
+      dailyScores.push({
+        date,
+        dailyScore: Math.round(avg),
+        testCount: scores.length,
+        firstTestAt: sortedSessions[0].created_at,
+        lastTestAt: sortedSessions[sortedSessions.length - 1].created_at
+      });
+    }
+    
+    // Sortiere nach Datum absteigend (neueste zuerst)
+    const sorted = dailyScores.sort((a, b) => b.date.localeCompare(a.date));
+    
+    console.log(`📊 Aggregated ${sorted.length} daily scores from sessions`);
+    if (sorted.length > 0) {
+      console.log('📊 First score:', sorted[0]);
+    }
+    
+    return sorted;
+  } catch (err) {
+    console.error('Error aggregating from sessions:', err);
+    return [];
   }
 }
 

@@ -13,6 +13,44 @@
   }
   
   let { dailyScores, onSelectDay }: Props = $props();
+
+  // FIX 1: Defensive Filtering für valide Scores + aufsteigend sortiert
+  let validScores = $derived(
+    (dailyScores ?? [])
+      .filter((d) => {
+        const score = getScoreValue(d);
+        const isValid = typeof score === 'number' && !Number.isNaN(score) && score >= 0;
+        if (!isValid) {
+          console.warn('⚠️ Filtered invalid score:', d);
+        }
+        return isValid;
+      })
+      .slice()
+      .sort((a, b) => a.date.localeCompare(b.date)) // Chronologisch: älteste zuerst
+  );
+
+  let hasData = $derived(validScores.length > 0);
+  
+  // Helper: Extrahiert Score (auch bei snake_case)
+  function getScoreValue(day: DailyScore | any): number {
+    if (typeof day.dailyScore === 'number') return day.dailyScore;
+    if (typeof day.daily_score === 'number') {
+      console.warn('⚠️ Found daily_score instead of dailyScore');
+      return day.daily_score;
+    }
+    return 0;
+  }
+  
+  // Debug-Logging - ERWEITERT
+  $effect(() => {
+    console.log('📊 DailyTrendChart received:', dailyScores.length, 'entries');
+    console.log('📊 Valid scores:', validScores.length);
+    if (validScores.length > 0) {
+      console.log('📊 First score:', validScores[0]);
+      console.log('📊 Last score:', validScores[validScores.length - 1]);
+      console.log('📊 All scores:', validScores.map(d => ({ date: d.date, score: getScoreValue(d) })));
+    }
+  });
   
   function handleDayClick(date: string) {
     if (onSelectDay) {
@@ -25,18 +63,24 @@
     return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
   }
   
-  function getBarColor(score: number): string {
-    if (score < 40) return 'bg-red-400';
-    if (score < 70) return 'bg-yellow-400';
+  // FIX 2: Unified Score Getter
+  function getScore(day: DailyScore): number {
+    return getScoreValue(day);
+  }
+  
+  function getBarColor(score: number | null | undefined): string {
+    const s = score ?? 0;
+    if (s < 40) return 'bg-red-400';
+    if (s < 70) return 'bg-yellow-400';
     return 'bg-brand-green';
   }
 </script>
 
 <div class="w-full">
-  {#if dailyScores.length === 0}
+  {#if !hasData}
     <div class="text-center py-8 text-gray-500">
-      <p>Noch keine Daten verfügbar</p>
-      <p class="text-sm">Starte deinen ersten Test, um deine Entwicklung zu sehen.</p>
+      <p class="font-semibold mb-2">Noch keine Daten verfügbar</p>
+      <p class="text-sm">Beginne mit deinem ersten Test, um deinen Verlauf zu sehen.</p>
     </div>
   {:else}
     <!-- Chart Area - Improved Visibility -->
@@ -60,22 +104,24 @@
           <div class="border-t border-gray-200"></div>
         </div>
         
-        <!-- Bars -->
-        {#each dailyScores.slice().reverse() as day, index}
+        <!-- Bars - FIX: Zeige nur letzte 14 Tage, sortiere chronologisch -->
+        {#each validScores.slice(-14) as day, index}
+          {@const score = getScore(day)}
+          {@const barHeightPercent = Math.max(score, 8)}
           <button
             onclick={() => handleDayClick(day.date)}
-            class="flex-1 flex flex-col items-center group cursor-pointer min-w-0 relative z-10 animate-fadeIn"
-            style="animation-delay: {index * 0.05}s;"
-            title="{formatDate(day.date)}: {day.dailyScore} Punkte ({day.testCount} {day.testCount === 1 ? 'Test' : 'Tests'})"
+            class="flex-1 flex flex-col items-center group cursor-pointer relative z-10 animate-fadeIn"
+            style="animation-delay: {index * 0.05}s; min-width: 20px;"
+            title="{formatDate(day.date)}: {score} Punkte ({day.testCount} {day.testCount === 1 ? 'Test' : 'Tests'})"
           >
-            <!-- Bar -->
+            <!-- Bar - FIXED: Direkte Prozent-Berechnung (0-100 Score → 0-100% Height) -->
             <div 
-              class="w-full {getBarColor(day.dailyScore)} rounded-t-lg transition-all duration-300 hover:opacity-90 shadow-sm group-hover:shadow-md"
-              style="height: {Math.max(day.dailyScore, 8)}%;"
+              class="w-full {getBarColor(score)} rounded-t-lg transition-all duration-300 hover:opacity-90 shadow-sm group-hover:shadow-md"
+              style="height: {barHeightPercent}%; min-height: 8px;"
             ></div>
             
             <!-- Date Label -->
-            <div class="text-xs text-gray-500 mt-2 group-hover:text-brand-purple group-hover:font-semibold transition-colors whitespace-nowrap">
+            <div class="text-[10px] md:text-xs text-gray-500 mt-2 group-hover:text-brand-purple group-hover:font-semibold transition-colors whitespace-nowrap">
               {formatDate(day.date).split('.')[0]}
             </div>
           </button>
