@@ -12,6 +12,7 @@
   import { onboarding } from './onboardingState';
   import { currentUser } from '$lib/stores/auth.store';
   import { ProfileService } from '$lib/services/profile.service';
+  import { AuthService } from '$lib/services/auth.service';
   import ContextAndTimeStep from './ContextAndTimeStep.svelte';
   import { 
     USER_GOAL_LABELS,
@@ -65,12 +66,14 @@
     }
   }
   
-  function prevStep() {
+  async function prevStep() {
     if (currentStep > 1) {
       currentStep = (currentStep - 1) as Step;
     } else {
-      // Bei Step 1: Zurück zum Dashboard (User ist eingeloggt, kann dort abmelden)
-      goto('/dashboard');
+      // Bei Step 1: Abmelden und zur Landing Page
+      // User ist im Onboarding gefangen → einziger Ausweg ist Logout
+      await AuthService.signOut();
+      goto('/');
     }
   }
   
@@ -375,13 +378,14 @@
         <!-- Navigation Buttons für Step 1 -->
         {#if currentStep === 1}
           <div class="flex gap-3 md:gap-4 mt-6">
-            <!-- Zurück zum Dashboard (für eingeloggte User, die Onboarding verlassen wollen) -->
+            <!-- Abmelden und zur Startseite (einziger Ausweg aus Onboarding) -->
             <button 
               onclick={prevStep} 
               class="btn-secondary flex-1 h-12 md:h-14 text-sm md:text-base font-bold"
             >
-              <span class="material-symbols-outlined">arrow_back</span>
-              Zurück
+              <span class="material-symbols-outlined">logout</span>
+              <span class="hidden md:inline">Abmelden & Zurück</span>
+              <span class="md:hidden">Abmelden</span>
             </button>
             <!-- Weiter zu Step 2 -->
             <button 
