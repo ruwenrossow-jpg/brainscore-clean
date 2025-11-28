@@ -69,12 +69,8 @@
   function prevStep() {
     if (currentStep > 0) {
       currentStep = (currentStep - 1) as Step;
-    } else {
-      // 🔧 FIX: Bei Step 0 zum Dashboard statt Landing
-      // (Landing würde sofort wieder ins Onboarding redirecten → Loop)
-      // User kann vom Dashboard aus abmelden wenn gewünscht
-      goto('/dashboard');
     }
+    // Bei Step 0: Nichts tun (kann nicht zurück, das ist der Start)
   }
   
   // Step 4: Download ICS
@@ -365,18 +361,30 @@
       <!-- Navigation Buttons (für Steps ohne eigene Buttons) -->
       {#if currentStep === 0 || currentStep === 1}
         <div class="card-actions flex gap-3 md:gap-4 mt-6">
-          <button onclick={prevStep} class="btn-secondary flex-1 h-12 md:h-14 text-sm md:text-base font-bold">
-            <span class="material-symbols-outlined">arrow_back</span>
-            Zurück
-          </button>
-          <button 
-            onclick={nextStep} 
-            class="btn-gradient-primary flex-1 h-12 md:h-14 text-sm md:text-base font-bold"
-            disabled={currentStep === 1 && !userName.trim()}
-          >
-            Weiter
-            <span class="material-symbols-outlined">arrow_forward</span>
-          </button>
+          {#if currentStep === 0}
+            <!-- Step 0: Kein Zurück-Button (das ist der Start) -->
+            <button 
+              onclick={nextStep} 
+              class="btn-gradient-primary w-full h-12 md:h-14 text-sm md:text-base font-bold"
+            >
+              Los geht's!
+              <span class="material-symbols-outlined">arrow_forward</span>
+            </button>
+          {:else}
+            <!-- Step 1: Zurück zu Step 0 möglich -->
+            <button onclick={prevStep} class="btn-secondary flex-1 h-12 md:h-14 text-sm md:text-base font-bold">
+              <span class="material-symbols-outlined">arrow_back</span>
+              Zurück
+            </button>
+            <button 
+              onclick={nextStep} 
+              class="btn-gradient-primary flex-1 h-12 md:h-14 text-sm md:text-base font-bold"
+              disabled={!userName.trim()}
+            >
+              Weiter
+              <span class="material-symbols-outlined">arrow_forward</span>
+            </button>
+          {/if}
         </div>
       {/if}
     </div>
