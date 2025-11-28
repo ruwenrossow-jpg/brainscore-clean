@@ -3,7 +3,7 @@
    * Onboarding Wizard
    * 
    * 4-step onboarding flow:
-   * 1. Welcome & Name
+   * 1. Welcome & Name (kombiniert)
    * 2. Goal selection (max 3)
    * 3. Context + Time selection (max 3, combined)
    * 4. Summary + ICS download + first test
@@ -13,16 +13,15 @@
   import { currentUser } from '$lib/stores/auth.store';
   import { ProfileService } from '$lib/services/profile.service';
   import ContextAndTimeStep from './ContextAndTimeStep.svelte';
-  import WelcomeIntroStep from './WelcomeIntroStep.svelte';
   import { 
     USER_GOAL_LABELS,
     type UserGoal,
     type TrackingContext
   } from './onboardingTypes';
   
-  type Step = 0 | 1 | 2 | 3 | 4;
+  type Step = 1 | 2 | 3 | 4;
   
-  let currentStep = $state<Step>(0);
+  let currentStep = $state<Step>(1);
   let userName = $state('');
   let selectedGoals = $state<UserGoal[]>([]);
   let contexts = $state<TrackingContext[]>([]);
@@ -67,10 +66,10 @@
   }
   
   function prevStep() {
-    if (currentStep > 0) {
+    if (currentStep > 1) {
       currentStep = (currentStep - 1) as Step;
     }
-    // Bei Step 0: Nichts tun (kann nicht zurück, das ist der Start)
+    // Bei Step 1: Nichts tun (kann nicht zurück, das ist der Start)
   }
   
   // Step 4: Download ICS
@@ -158,7 +157,7 @@
     <!-- Progress Indicator -->
     <div class="mb-6 md:mb-8">
       <div class="flex items-center justify-center gap-2 mb-4">
-        {#each [0, 1, 2, 3, 4] as step}
+        {#each [1, 2, 3, 4] as step}
           <div class="w-2 h-2 rounded-full {currentStep === step ? 'bg-black' : currentStep > step ? 'bg-gray-400' : 'bg-gray-200'}"></div>
           {#if step < 4}
             <div class="w-8 h-0.5 bg-gray-300"></div>
@@ -166,7 +165,7 @@
         {/each}
       </div>
       <p class="text-center text-sm text-gray-600">
-        Schritt {currentStep + 1} von 5
+        Schritt {currentStep} von 4
       </p>
     </div>
 
@@ -174,21 +173,36 @@
     <div class="card bg-base-200 shadow-lg border border-gray-200">
       <div class="card-body">
         
-        <!-- Step 0: Welcome Intro -->
-        {#if currentStep === 0}
-          <WelcomeIntroStep />
-        
-        <!-- Step 1: Name -->
-        {:else if currentStep === 1}
+        <!-- Step 1: Welcome + Name (kombiniert) -->
+        {#if currentStep === 1}
           <div class="space-y-6 md:space-y-8">
+            <!-- Welcome Header -->
             <div class="text-center">
-              <h2 class="text-2xl md:text-3xl lg:text-4xl font-black text-gray-900 mb-3 md:mb-4 leading-tight">
-                Lass uns starten!
-              </h2>
-              <p class="text-gray-600 text-base md:text-lg">
-                In wenigen Minuten richten wir deinen persönlichen Fokus-Tracker ein.
+              <h1 class="text-3xl md:text-4xl lg:text-5xl font-black text-gray-900 mb-3 md:mb-4 leading-tight">
+                Willkommen bei <span class="text-gradient-hero">BrainrotAI</span>
+              </h1>
+            </div>
+
+            <!-- Intro-Text (vereinfacht) -->
+            <div class="space-y-3 text-base md:text-lg text-gray-700 leading-relaxed">
+              <p>
+                <strong class="text-gray-900">BrainrotAI</strong> hilft dir zu verstehen, 
+                wie dein Handy deine Aufmerksamkeit beeinflusst.
+              </p>
+              <p>
+                Du machst kurze <strong class="text-gray-900">Reaktionstests</strong> 
+                und gibst danach grob deine <strong class="text-gray-900">Screentime</strong> an.
+              </p>
+              <p>
+                Daraus entsteht ein <strong class="text-gray-900">BrainScore</strong> 
+                und ein <strong class="text-gray-900">Verlauf über die Zeit</strong>.
               </p>
             </div>
+
+            <!-- Separator -->
+            <div class="border-t-2 border-gray-200 my-6"></div>
+
+            <!-- Namenseingabe -->
             <div>
               <label for="userName" class="block text-sm md:text-base font-bold text-gray-900 mb-2 md:mb-3">
                 Wie sollen wir dich nennen?
@@ -356,33 +370,18 @@
           </div>
         {/if}
 
-        <!-- Navigation Buttons (für Steps ohne eigene Buttons) -->
-        {#if currentStep === 0 || currentStep === 1}
+        <!-- Navigation Buttons für Step 1 (keine eigenen Buttons im Content) -->
+        {#if currentStep === 1}
           <div class="flex gap-3 md:gap-4 mt-6">
-            {#if currentStep === 0}
-              <!-- Step 0: Kein Zurück-Button (das ist der Start) -->
-              <button 
-                onclick={nextStep} 
-                class="btn-gradient-primary w-full h-12 md:h-14 text-sm md:text-base font-bold"
-              >
-                Los geht's!
-                <span class="material-symbols-outlined">arrow_forward</span>
-              </button>
-            {:else}
-              <!-- Step 1: Zurück zu Step 0 möglich -->
-              <button onclick={prevStep} class="btn-secondary flex-1 h-12 md:h-14 text-sm md:text-base font-bold">
-                <span class="material-symbols-outlined">arrow_back</span>
-                Zurück
-              </button>
-              <button 
-                onclick={nextStep} 
-                class="btn-gradient-primary flex-1 h-12 md:h-14 text-sm md:text-base font-bold"
-                disabled={!userName.trim()}
-              >
-                Weiter
-                <span class="material-symbols-outlined">arrow_forward</span>
-              </button>
-            {/if}
+            <!-- Step 1: Kein Zurück-Button (das ist der Start) -->
+            <button 
+              onclick={nextStep} 
+              class="btn-gradient-primary w-full h-12 md:h-14 text-sm md:text-base font-bold"
+              disabled={!userName.trim()}
+            >
+              Weiter
+              <span class="material-symbols-outlined">arrow_forward</span>
+            </button>
           </div>
         {/if}
 
