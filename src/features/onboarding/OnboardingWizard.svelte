@@ -68,8 +68,10 @@
   function prevStep() {
     if (currentStep > 1) {
       currentStep = (currentStep - 1) as Step;
+    } else {
+      // Bei Step 1: Zurück zum Dashboard (User ist eingeloggt, kann dort abmelden)
+      goto('/dashboard');
     }
-    // Bei Step 1: Nichts tun (kann nicht zurück, das ist der Start)
   }
   
   // Step 4: Download ICS
@@ -370,13 +372,21 @@
           </div>
         {/if}
 
-        <!-- Navigation Buttons für Step 1 (keine eigenen Buttons im Content) -->
+        <!-- Navigation Buttons für Step 1 -->
         {#if currentStep === 1}
           <div class="flex gap-3 md:gap-4 mt-6">
-            <!-- Step 1: Kein Zurück-Button (das ist der Start) -->
+            <!-- Zurück zum Dashboard (für eingeloggte User, die Onboarding verlassen wollen) -->
+            <button 
+              onclick={prevStep} 
+              class="btn-secondary flex-1 h-12 md:h-14 text-sm md:text-base font-bold"
+            >
+              <span class="material-symbols-outlined">arrow_back</span>
+              Zurück
+            </button>
+            <!-- Weiter zu Step 2 -->
             <button 
               onclick={nextStep} 
-              class="btn-gradient-primary w-full h-12 md:h-14 text-sm md:text-base font-bold"
+              class="btn-gradient-primary flex-1 h-12 md:h-14 text-sm md:text-base font-bold"
               disabled={!userName.trim()}
             >
               Weiter
