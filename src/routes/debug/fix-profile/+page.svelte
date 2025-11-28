@@ -11,6 +11,7 @@
   import { onMount } from 'svelte';
   
   let loading = $state(false);
+  let loadingProfile = $state(true);
   let profileData = $state<any>(null);
   let message = $state('');
   let error = $state('');
@@ -18,10 +19,15 @@
   onMount(async () => {
     if ($currentUser) {
       await loadProfile();
+    } else {
+      loadingProfile = false;
+      error = 'Nicht eingeloggt. Bitte zuerst einloggen.';
     }
   });
   
   async function loadProfile() {
+    loadingProfile = true;
+    error = '';
     try {
       const { data, error: err } = await supabase
         .from('profiles')
@@ -29,10 +35,20 @@
         .eq('id', $currentUser!.id)
         .single();
       
-      if (err) throw err;
+      if (err) {
+        console.error('Profile load error:', err);
+        if (err.code === 'PGRST116') {
+          error = 'Kein Profil gefunden. Wird beim Fix automatisch erstellt.';
+        } else {
+          throw err;
+        }
+      }
       profileData = data;
     } catch (e: any) {
-      error = e.message;
+      console.error('Load profile failed:', e);
+      error = 'Fehler beim Laden: ' + e.message;
+    } finally {
+      loadingProfile = false;
     }
   }
   
@@ -95,7 +111,12 @@
       <div class="card-body">
         <h2 class="card-title">Aktueller Profil-Status</h2>
         
-        {#if profileData}
+        {#if loadingProfile}
+          <div class="flex items-center gap-3">
+            <span class="loading loading-spinner loading-md"></span>
+            <span>Lade Profil...</span>
+          </div>
+        {:else if profileData}
           <div class="space-y-2 text-sm">
             <div class="flex justify-between">
               <span class="font-semibold">User ID:</span>
@@ -124,7 +145,9 @@
             </div>
           </div>
         {:else}
-          <div class="loading loading-spinner"></div>
+          <div class="alert alert-info">
+            <span>ℹ️ {error || 'Kein Profil vorhanden. Wird beim Fix erstellt.'}</span>
+          </div>
         {/if}
       </div>
     </div>
