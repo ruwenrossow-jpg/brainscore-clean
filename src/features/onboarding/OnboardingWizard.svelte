@@ -356,37 +356,37 @@
           </div>
         {/if}
 
-      </div>
+        <!-- Navigation Buttons (für Steps ohne eigene Buttons) -->
+        {#if currentStep === 0 || currentStep === 1}
+          <div class="flex gap-3 md:gap-4 mt-6">
+            {#if currentStep === 0}
+              <!-- Step 0: Kein Zurück-Button (das ist der Start) -->
+              <button 
+                onclick={nextStep} 
+                class="btn-gradient-primary w-full h-12 md:h-14 text-sm md:text-base font-bold"
+              >
+                Los geht's!
+                <span class="material-symbols-outlined">arrow_forward</span>
+              </button>
+            {:else}
+              <!-- Step 1: Zurück zu Step 0 möglich -->
+              <button onclick={prevStep} class="btn-secondary flex-1 h-12 md:h-14 text-sm md:text-base font-bold">
+                <span class="material-symbols-outlined">arrow_back</span>
+                Zurück
+              </button>
+              <button 
+                onclick={nextStep} 
+                class="btn-gradient-primary flex-1 h-12 md:h-14 text-sm md:text-base font-bold"
+                disabled={!userName.trim()}
+              >
+                Weiter
+                <span class="material-symbols-outlined">arrow_forward</span>
+              </button>
+            {/if}
+          </div>
+        {/if}
 
-      <!-- Navigation Buttons (für Steps ohne eigene Buttons) -->
-      {#if currentStep === 0 || currentStep === 1}
-        <div class="card-actions flex gap-3 md:gap-4 mt-6">
-          {#if currentStep === 0}
-            <!-- Step 0: Kein Zurück-Button (das ist der Start) -->
-            <button 
-              onclick={nextStep} 
-              class="btn-gradient-primary w-full h-12 md:h-14 text-sm md:text-base font-bold"
-            >
-              Los geht's!
-              <span class="material-symbols-outlined">arrow_forward</span>
-            </button>
-          {:else}
-            <!-- Step 1: Zurück zu Step 0 möglich -->
-            <button onclick={prevStep} class="btn-secondary flex-1 h-12 md:h-14 text-sm md:text-base font-bold">
-              <span class="material-symbols-outlined">arrow_back</span>
-              Zurück
-            </button>
-            <button 
-              onclick={nextStep} 
-              class="btn-gradient-primary flex-1 h-12 md:h-14 text-sm md:text-base font-bold"
-              disabled={!userName.trim()}
-            >
-              Weiter
-              <span class="material-symbols-outlined">arrow_forward</span>
-            </button>
-          {/if}
-        </div>
-      {/if}
+      </div>
     </div>
 
   </div>
