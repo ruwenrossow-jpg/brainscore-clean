@@ -6,6 +6,8 @@
    * - Heute: Tages-Score + Test-Count
    * - Woche: 7-Tage-Durchschnitt + Stats
    * - Verlauf: 14-Tage-Chart
+   * 
+   * NEU: Hook-Dashboard mit Forecast-Card (sofortiger Insight)
    */
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
@@ -14,6 +16,11 @@
   import { syncDailyScoresFromSessions } from '$lib/services/dailyScore.service';
   import { getScoreBand, getRelativeTimeString } from '$lib/config/scoring';
   import type { DashboardData } from '$lib/services/dashboard.service';
+  import ForecastCard from '$lib/components/dashboard/ForecastCard.svelte';
+  import type { PageData } from './$types';
+  
+  // NEU: Forecast aus Server Load (Hook-Dashboard)
+  let { data }: { data: PageData } = $props();
   
   let dashboardData = $state<DashboardData | null>(null);
   let loading = $state(true);
@@ -116,6 +123,32 @@
       {:else if dashboardData}
         
         <div class="space-y-6">
+          
+          <!-- NEU: Hero-Card mit Forecast (Hook-Dashboard) -->
+          <div class="animate-fadeIn">
+            <ForecastCard forecast={data.forecast} />
+          </div>
+          
+          <!-- NEU: CTA-Buttons direkt unter Forecast -->
+          <div class="flex flex-col sm:flex-row gap-3 animate-fadeIn">
+            <!-- Primary: Test machen -->
+            <button 
+              class="btn-gradient-primary flex-1 text-base sm:text-lg"
+              onclick={() => goto('/test')}
+            >
+              <span class="material-symbols-outlined">psychology</span>
+              Jetzt aktualisieren (Test machen)
+            </button>
+
+            <!-- Secondary: Verlauf -->
+            <button 
+              class="btn-secondary flex-1"
+              onclick={() => goto('/logbuch')}
+            >
+              <span class="material-symbols-outlined">history</span>
+              Nur Verlauf ansehen
+            </button>
+          </div>
           
           <!-- Card: Heute -->
           <div class="card-modern animate-fadeIn">
