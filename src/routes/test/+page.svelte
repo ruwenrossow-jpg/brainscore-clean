@@ -13,16 +13,25 @@
   import SartInstructions from '$lib/components/sart/SartInstructions.svelte';
   import SartTest from '$lib/components/sart/SartTest.svelte';
   import SartResult from '$lib/components/sart/SartResult.svelte';
-  import DigitalCheckIn from '$features/digitalLog/DigitalCheckIn.svelte';
+  import PostTestInvestment from '$lib/components/posttest/PostTestInvestment.svelte';
+  import PostTestInsightScreen from '$lib/components/posttest/PostTestInsightScreen.svelte';
+  import { getPostTestInsight, type PostTestInsight } from '$lib/services/insight.service';
   import { goto } from '$app/navigation';
   import { isAuthenticated } from '$lib/stores/auth.store';
+  import type { PageData } from './$types';
 
-  type ExtendedTestStep = TestStep | 'digital-checkin';
+  interface Props {
+    data: PageData;
+  }
+
+  let { data }: Props = $props();
+
+  type ExtendedTestStep = TestStep | 'investment-input' | 'insight-reward';
   
   let step = $state<ExtendedTestStep>('instructions');
   let metrics: SartMetrics | null = $state(null);
   let sessionId: string | null = $state(null);
-  let showDigitalCheckIn = $state(false);
+  let insight: PostTestInsight | null = $state(null);
   let authCheckComplete = $state(false);
   
   // Auth-Guard: Redirect wenn nicht eingeloggt
@@ -45,19 +54,33 @@
     step = 'result';
   }
   
-  function handleResultNext() {
-    // Show digital check-in prompt
-    showDigitalCheckIn = true;
+  function handleShowInvestment() {
+    step = 'investment-input';
   }
   
-  function handleDigitalCheckInComplete() {
-    console.log('✅ Digital Check-in completed');
+  async function handleInvestmentComplete() {
+    console.log('✅ Investment completed, fetching insight...');
+    
+    try {
+      insight = await getPostTestInsight(data.userId);
+      step = 'insight-reward';
+    } catch (error) {
+      console.error('❌ Failed to fetch insight:', error);
+      // Fallback: Go to dashboard on error
+      goto('/dashboard');
+    }
+  }
+  
+  function handleInsightComplete() {
+    console.log('✅ Flow complete, navigating to dashboard');
     goto('/dashboard');
   }
   
-  function handleDigitalCheckInSkip() {
-    console.log('⏭️ Digital Check-in skipped');
-    goto('/dashboard');
+  function handleTestAgain() {
+    step = 'instructions';
+    metrics = null;
+    sessionId = null;
+    insight = null;
   }
 </script>
 
@@ -74,42 +97,26 @@
   {:else if step === 'test'}
     <SartTest onComplete={handleTestComplete} />
     
-    {:else if step === 'result'}
-    {#if showDigitalCheckIn && sessionId}
-      <!-- Digital Check-in View -->
-      <div class="w-full max-w-lg space-y-8">
-        <!-- Result Card (compact) -->
-        <div class="flex justify-center">
-          <SartResult {metrics} onNext={handleResultNext} />
-        </div>
-        
-        <!-- Digital Check-in Card -->
-        <div class="flex justify-center">
-          <DigitalCheckIn 
-            testId={sessionId} 
-            onComplete={handleDigitalCheckInComplete}
-            onSkip={handleDigitalCheckInSkip}
-          />
-        </div>
-      </div>
-    {:else}
-      <!-- Result Only (with CTA to show check-in) -->
-      <div class="w-full max-w-lg space-y-6">
-        <SartResult {metrics} onNext={handleResultNext} />
-        
-        {#if !showDigitalCheckIn && sessionId}
-          <div class="text-center">
-            <button
-              onclick={() => showDigitalCheckIn = true}
-              class="btn-secondary w-full max-w-md"
-            >
-              <span class="material-symbols-outlined">smartphone</span>
-              Digitalen Check-in ausfüllen (optional)
-            </button>
-          </div>
-        {/if}
-      </div>
-    {/if}
+  {:else if step === 'result'}
+    <SartResult 
+      {metrics} 
+      onNext={handleTestAgain} 
+      onShowInvestment={sessionId ? handleShowInvestment : undefined}
+    />
+    
+  {:else if step === 'investment-input' && sessionId && metrics}
+    <PostTestInvestment 
+      testId={sessionId}
+      score={metrics.score}
+      onComplete={handleInvestmentComplete}
+    />
+    
+  {:else if step === 'insight-reward' && insight}
+    <PostTestInsightScreen 
+      {insight}
+      onContinueToDashboard={handleInsightComplete}
+      onTestAgain={handleTestAgain}
+    />
   {/if}
 
 </div>

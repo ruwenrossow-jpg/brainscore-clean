@@ -10,9 +10,10 @@
   interface Props {
     metrics: SartMetrics | null;
     onNext: () => void;
+    onShowInvestment?: () => void;
   }
   
-  let { metrics, onNext }: Props = $props();
+  let { metrics, onNext, onShowInvestment }: Props = $props();
   
   let showDetails = $state(false);
   
@@ -107,15 +108,40 @@
         </div>
       {/if}
 
+      <!-- Motivational Text -->
+      <div class="mb-6 p-4 bg-gradient-to-r from-brand-purple/5 to-brand-accent/5 rounded-xl border border-brand-purple/20">
+        <p class="text-base text-gray-700 font-medium">
+          <strong class="text-brand-purple">Mach deinen Score aussagekräftig!</strong><br/>
+          Füge jetzt Kontext hinzu (10 Sekunden) und entdecke später Muster.
+        </p>
+      </div>
+      
       <!-- CTAs -->
-      <div class="w-full space-y-4">
-        <button 
-          class="btn-gradient-primary w-full text-lg font-bold"
-          onclick={goToDashboard}
-        >
-          Zum Dashboard
-          <span class="ml-2">→</span>
-        </button>
+      <div class="w-full space-y-3">
+        {#if onShowInvestment}
+          <button 
+            class="btn-gradient-primary w-full text-lg font-bold flex items-center justify-center gap-2"
+            onclick={onShowInvestment}
+          >
+            <span class="material-symbols-outlined">trending_up</span>
+            Kurz einchecken (Screentime & Kontext)
+          </button>
+          
+          <button 
+            class="text-sm text-gray-600 hover:text-brand-purple font-bold transition-colors w-full"
+            onclick={goToDashboard}
+          >
+            Später eingeben
+          </button>
+        {:else}
+          <button 
+            class="btn-gradient-primary w-full text-lg font-bold"
+            onclick={goToDashboard}
+          >
+            Zum Dashboard
+            <span class="ml-2">→</span>
+          </button>
+        {/if}
         
         <button 
           class="btn-secondary w-full text-base"

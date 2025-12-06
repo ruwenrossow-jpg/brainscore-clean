@@ -15,7 +15,15 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     
     // Parse request body
     const body = await request.json();
-    const { testId, screenTimeBucket, mainCategories, pickupFrequency } = body as Omit<DigitalLog, 'id' | 'createdAt'>;
+    const { 
+      testId, 
+      screenTimeBucket, 
+      mainCategories, 
+      pickupFrequency,
+      contextTags,
+      subjectiveState,
+      customContext
+    } = body as Omit<DigitalLog, 'id' | 'createdAt'>;
     
     // Validation
     if (!testId || !screenTimeBucket || !mainCategories || !pickupFrequency) {
@@ -41,6 +49,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
           screen_time_bucket: screenTimeBucket,
           main_categories: mainCategories,
           pickup_frequency: pickupFrequency,
+          context_tags: contextTags || null,
+          subjective_state: subjectiveState || null,
+          custom_context: customContext || null,
           updated_at: new Date().toISOString()
         })
         .eq('test_id', testId);
@@ -61,6 +72,9 @@ export const POST: RequestHandler = async ({ request, locals }) => {
           screen_time_bucket: screenTimeBucket,
           main_categories: mainCategories,
           pickup_frequency: pickupFrequency,
+          context_tags: contextTags || null,
+          subjective_state: subjectiveState || null,
+          custom_context: customContext || null,
           created_at: new Date().toISOString()
         });
       
