@@ -15,6 +15,10 @@ import {
 } from '$features/logbook/dailyScoreService';
 import { STATS_WINDOWS } from '$lib/config/scoring';
 import { supabase } from './supabase.client';
+import type { Database } from './database.types';
+
+// Type Helpers
+type SartSession = Database['public']['Tables']['sart_sessions']['Row'];
 
 export interface DashboardData {
   today: {
@@ -91,7 +95,8 @@ async function aggregateFromSessions(userId: string): Promise<DailyScore[]> {
       .select('id, created_at, brain_score')
       .eq('user_id', userId)
       .gte('created_at', thirtyDaysAgo.toISOString())
-      .order('created_at', { ascending: true });
+      .order('created_at', { ascending: false })
+      .returns<Pick<SartSession, 'id' | 'created_at' | 'brain_score'>[]>();
     
     if (error) {
       console.error('Error fetching sessions for aggregation:', error);

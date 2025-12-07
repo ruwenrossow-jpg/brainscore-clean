@@ -2,7 +2,12 @@
   /**
    * Minimalistisches Dashboard
    * 
-   * Skimming-optimiert: Nur das Wichtigste auf einen Blick
+   * DASHBOARD FORECAST TIMELINE (NEU):
+   * - ForecastHeroCard: Prognose für JETZT
+   * - DayTimeline: 5 Tages-Segmente mit Status
+   * - MiniBaselineChart: User-Baseline-Kurve (24h)
+   * 
+   * BESTEHEND:
    * - Heute: Tages-Score + Test-Count
    * - Woche: 7-Tage-Durchschnitt + Stats
    * - Verlauf: 14-Tage-Chart
@@ -14,6 +19,23 @@
   import { syncDailyScoresFromSessions } from '$lib/services/dailyScore.service';
   import { getScoreBand, getRelativeTimeString } from '$lib/config/scoring';
   import type { DashboardData } from '$lib/services/dashboard.service';
+  
+  // NEU: Forecast Timeline Components
+  import ForecastHeroCard from '$lib/components/dashboard/ForecastHeroCard.svelte';
+  import DayTimeline from '$lib/components/dashboard/DayTimeline.svelte';
+  import MiniBaselineChart from '$lib/components/dashboard/MiniBaselineChart.svelte';
+  
+  // NEU: Server-Load Props (aus +page.server.ts)
+  import type { PageData } from './$types';
+  
+  interface Props {
+    data: PageData;
+  }
+  
+  let { data }: Props = $props();
+  
+  // NEU: Forecast + Baseline (aus Server-Load)
+  const { forecast, userBaseline } = data;
   
   let dashboardData = $state<DashboardData | null>(null);
   let loading = $state(true);
@@ -30,24 +52,17 @@
     }
     
     try {
-      // 1. Sync DailyScores aus Sessions (einmalig beim Laden)
-      console.log('🔄 Syncing daily scores...');
-      const { success, synced } = await syncDailyScoresFromSessions($auth.user.id);
+      // GEÄNDERT: Kein Sync mehr bei jedem Load (passiert automatisch nach Test)
+      // Nur Dashboard-Daten laden (client-side)
+      const { data: dashData, error: err } = await getDashboardData($auth.user.id);
       
-      if (success) {
-        console.log(`✅ Synced ${synced} daily scores`);
-      }
-      
-      // 2. Lade Dashboard-Daten
-      const { data, error: err } = await getDashboardData($auth.user.id);
-      
-      if (err || !data) {
+      if (err || !dashData) {
         error = err || 'Failed to load dashboard data';
         loading = false;
         return;
       }
       
-      dashboardData = data;
+      dashboardData = dashData;
     } catch (err) {
       console.error('Dashboard error:', err);
       error = 'Unexpected error loading dashboard';
@@ -116,6 +131,29 @@
       {:else if dashboardData}
         
         <div class="space-y-6">
+          
+          <!-- NEU: Forecast Timeline Section -->
+          <section class="space-y-6 mb-10">
+            <!-- Forecast Hero -->
+            <ForecastHeroCard {forecast} />
+            
+            <!-- Day Timeline -->
+            <DayTimeline 
+              currentSegment={forecast.currentSegment}
+              {userBaseline}
+            />
+            
+            <!-- Baseline Chart -->
+            <MiniBaselineChart 
+              {userBaseline}
+              currentHour={new Date().getHours()}
+            />
+          </section>
+          
+          <!-- Divider -->
+          <div class="divider my-10">
+            <span class="text-base-content/60">Deine historischen Daten</span>
+          </div>
           
           <!-- Card: Heute -->
           <div class="card-modern animate-fadeIn">
