@@ -1,9 +1,25 @@
 # Dashboard Forecast Timeline - Implementation Summary
 
 **Branch:** `feature/dashboard-forecast-timeline`  
-**Commit:** `5504833`  
+**Commit:** `5afc6f5` *(Updated: Segment-based baseline)*  
 **Date:** December 7, 2025  
 **Status:** ✅ Complete - Ready for Testing
+
+---
+
+## ⚠️ Critical Fix Applied (07.12.2025, 22:30)
+
+**Problem:** User-Baseline fließt nicht ein bei realistischen Nutzungsmustern (1 Test/Tag zu variabler Zeit)
+
+**Root Cause:** `MIN_TESTS_PER_HOUR = 2` war zu restriktiv. User erreicht nie 2+ Tests in derselben Stunde.
+
+**Solution:** Umstellung von stunden-basierter auf segment-basierte Gruppierung:
+- **Alt:** 24 Buckets (0-23 Uhr), MIN_TESTS_PER_HOUR = 2
+- **Neu:** 5 Segmente (morning/forenoon/midday/afternoon/evening), MIN_TESTS_PER_SEGMENT = 2
+
+**Impact:** User mit 10+ Tests über 2 Wochen verteilt sehen jetzt personalisierte Baseline statt nur globaler Kurve.
+
+**Technical Changes:** `forecastService.ts` - `getUserBaseline()` gruppiert nach Segmenten, jede Stunde nutzt Segment-Durchschnitt.
 
 ---
 
@@ -138,10 +154,17 @@ Alle 12 Schritte der Master Specification wurden vollständig implementiert:
 - Trough: 03:00 (~35)
 - Post-Lunch Dip: 14:00 (~75)
 
-**2. User Baseline**
+**2. User Baseline** *(Updated 07.12.2025 - Segment-based)*
 ```typescript
-userValue = globalValue + (userAverage - globalValue) * USER_MODULATION_WEIGHT
+// Gruppierung nach Tages-Segmenten (statt einzelner Stunden)
+// - morning (6-9h), forenoon (10-11h), midday (12-15h), afternoon (16-19h), evening (20-5h)
+// - MIN_TESTS_PER_SEGMENT = 2 (min. 2 Tests pro Segment)
+
+segmentAverage = sum(scores_in_segment) / count(scores_in_segment)
+userValue = globalValue + (segmentAverage - globalValue) * USER_MODULATION_WEIGHT
 // USER_MODULATION_WEIGHT = 0.3 (30% User-Einfluss)
+
+// Jede Stunde innerhalb eines Segments nutzt den Segment-Durchschnitt
 ```
 
 **3. Forecast Calculation**
@@ -233,7 +256,7 @@ docs/
 USER_MODULATION_WEIGHT = 0.3         // 30% User-Einfluss
 DECAY_HALF_LIFE_HOURS = 4            // 4h Half-Life
 MAX_LAST_TEST_WEIGHT = 0.5           // Max 50% Gewichtung auf letzten Test
-MIN_TESTS_PER_HOUR = 2               // Min. 2 Tests für Baseline
+MIN_TESTS_PER_SEGMENT = 2            // Min. 2 Tests pro Segment (UPDATED 07.12.2025)
 BASELINE_LOOKBACK_DAYS = 30          // 30 Tage Lookback
 
 // globalBaseline.ts
