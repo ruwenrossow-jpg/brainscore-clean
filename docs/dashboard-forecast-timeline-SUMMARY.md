@@ -1,13 +1,15 @@
 # Dashboard Forecast Timeline - Implementation Summary
 
 **Branch:** `feature/dashboard-forecast-timeline`  
-**Commit:** `5afc6f5` *(Updated: Segment-based baseline)*  
+**Commit:** `e19c364` *(Final: Hybrid with Overall-Average Fallback)*  
 **Date:** December 7, 2025  
 **Status:** ✅ Complete - Ready for Testing
 
 ---
 
-## ⚠️ Critical Fix Applied (07.12.2025, 22:30)
+## ⚠️ Critical Fixes Applied
+
+### **Fix 1: Segment-based Grouping** (07.12.2025, 22:30)
 
 **Problem:** User-Baseline fließt nicht ein bei realistischen Nutzungsmustern (1 Test/Tag zu variabler Zeit)
 
@@ -17,9 +19,41 @@
 - **Alt:** 24 Buckets (0-23 Uhr), MIN_TESTS_PER_HOUR = 2
 - **Neu:** 5 Segmente (morning/forenoon/midday/afternoon/evening), MIN_TESTS_PER_SEGMENT = 2
 
-**Impact:** User mit 10+ Tests über 2 Wochen verteilt sehen jetzt personalisierte Baseline statt nur globaler Kurve.
+**Impact:** User mit 10+ Tests über 2 Wochen verteilt sehen personalisierte Baseline in mehreren Segmenten.
 
-**Technical Changes:** `forecastService.ts` - `getUserBaseline()` gruppiert nach Segmenten, jede Stunde nutzt Segment-Durchschnitt.
+---
+
+### **Fix 2: Hybrid Fallback** (07.12.2025, 23:00) ✅ **FINAL**
+
+**Problem:** `MIN_TESTS_PER_SEGMENT = 2` immer noch zu restriktiv. User mit 11 Tests haben nur 1-3 Tests pro Segment → viele Segmente zeigen keine User-Daten.
+
+**Root Cause:** Tests verteilen sich ungleichmäßig auf Segmente. Einzelne Tests werden verworfen.
+
+**Solution:** Hybrid-Ansatz mit Overall-Average Fallback - **JEDER Test fließt ein:**
+
+```typescript
+overallAverage = sum(all_tests) / count(all_tests)
+
+for each segment:
+  if (tests >= 2):
+    segmentAvg = direct_average(tests)           // Direkt
+  else if (tests == 1):
+    segmentAvg = (test + overallAverage) / 2     // 50% Blend (robust gegen Ausreißer)
+  else:
+    segmentAvg = overallAverage                  // Fallback (zeigt User-Performance)
+```
+
+**Beispiel mit echten Daten (11 Tests, Overall-Avg = 69.7):**
+- Midday [70, 63, 66]: Avg = 66.3 (direkt)
+- Evening [61]: Avg = (61 + 69.7) / 2 = 65.4 (geblended)
+- Morning []: Avg = 69.7 (Fallback)
+
+**Impact:** 
+- ✅ **ALLE 24 Stunden** zeigen User-Baseline (lila durchgezogene Linie)
+- ✅ **ALLE Segmente** haben "Daten vorhanden" Status
+- ✅ Chart zeigt vollständige personalisierte Kurve (keine Lücken mehr)
+
+**Technical Changes:** `forecastService.ts` - Entfernt MIN_TESTS_PER_SEGMENT Threshold, alle Segmente nutzen Hybrid-Logik.
 
 ---
 
@@ -154,17 +188,22 @@ Alle 12 Schritte der Master Specification wurden vollständig implementiert:
 - Trough: 03:00 (~35)
 - Post-Lunch Dip: 14:00 (~75)
 
-**2. User Baseline** *(Updated 07.12.2025 - Segment-based)*
+**2. User Baseline** *(Updated 07.12.2025 - Hybrid with Fallback)*
 ```typescript
-// Gruppierung nach Tages-Segmenten (statt einzelner Stunden)
-// - morning (6-9h), forenoon (10-11h), midday (12-15h), afternoon (16-19h), evening (20-5h)
-// - MIN_TESTS_PER_SEGMENT = 2 (min. 2 Tests pro Segment)
+// Schritt 1: Berechne Overall-Average aller Tests
+overallAverage = sum(all_scores) / count(all_scores)
 
-segmentAverage = sum(scores_in_segment) / count(scores_in_segment)
+// Schritt 2: Pro Segment - Hybrid-Logik
+if (segment_tests >= 2):
+  segmentAverage = sum(segment_scores) / count(segment_scores)  // Direkt
+else if (segment_tests == 1):
+  segmentAverage = (segment_score + overallAverage) / 2         // 50% Blend
+else:
+  segmentAverage = overallAverage                               // Fallback
+
+// Schritt 3: Modulation für jede Stunde im Segment
 userValue = globalValue + (segmentAverage - globalValue) * USER_MODULATION_WEIGHT
 // USER_MODULATION_WEIGHT = 0.3 (30% User-Einfluss)
-
-// Jede Stunde innerhalb eines Segments nutzt den Segment-Durchschnitt
 ```
 
 **3. Forecast Calculation**
@@ -256,8 +295,9 @@ docs/
 USER_MODULATION_WEIGHT = 0.3         // 30% User-Einfluss
 DECAY_HALF_LIFE_HOURS = 4            // 4h Half-Life
 MAX_LAST_TEST_WEIGHT = 0.5           // Max 50% Gewichtung auf letzten Test
-MIN_TESTS_PER_SEGMENT = 2            // Min. 2 Tests pro Segment (UPDATED 07.12.2025)
 BASELINE_LOOKBACK_DAYS = 30          // 30 Tage Lookback
+
+// REMOVED: MIN_TESTS_PER_SEGMENT (UPDATED 07.12.2025 - Hybrid-Logik nutzt JEDEN Test)
 
 // globalBaseline.ts
 GLOBAL_BASELINE_VALUES = {           // Fixed hourly curve
