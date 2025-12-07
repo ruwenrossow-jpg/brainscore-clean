@@ -53,11 +53,13 @@ const DECAY_HALF_LIFE_HOURS = 4;
 const MAX_LAST_TEST_WEIGHT = 0.5;
 
 /**
- * Minimum Anzahl Tests pro Segment für User-Baseline
- * Segment = morning/forenoon/midday/afternoon/evening (3-5 Stunden)
- * (Verhindert Overfitting bei einzelnen Tests)
+ * NICHT MEHR VERWENDET (Legacy)
+ * Neue Logik: Hybrid-Fallback mit Overall-Average
+ * - >= 2 Tests: Direkter Segment-Durchschnitt
+ * - 1 Test: 50% Segment + 50% Overall-Average
+ * - 0 Tests: 100% Overall-Average
  */
-const MIN_TESTS_PER_SEGMENT = 2;
+// const MIN_TESTS_PER_SEGMENT = 2; // REMOVED
 
 /**
  * Lookback-Periode für User-Baseline (Tage)
@@ -104,7 +106,11 @@ export async function getUserBaseline(userId: string): Promise<BaselinePoint[]> 
     return getAllGlobalBaselinePoints();
   }
 
-  // 2. Gruppiere nach Segment (statt einzelner Stunden)
+  // 2. Berechne Overall-Average aller Tests (für Fallback)
+  const allScores = sessions.map((s) => s.brain_score);
+  const overallAverage = allScores.reduce((sum, s) => sum + s, 0) / allScores.length;
+
+  // 3. Gruppiere nach Segment (statt einzelner Stunden)
   const segmentData: Map<DaySegment, number[]> = new Map();
 
   for (const session of sessions) {
@@ -118,17 +124,26 @@ export async function getUserBaseline(userId: string): Promise<BaselinePoint[]> 
     segmentData.get(segment)!.push(score);
   }
 
-  // 3. Berechne Durchschnitt pro Segment
+  // 4. Berechne Durchschnitt pro Segment mit Hybrid-Fallback
   const segmentAverages: Map<DaySegment, number> = new Map();
 
   for (const [segment, scores] of segmentData.entries()) {
-    if (scores.length >= MIN_TESTS_PER_SEGMENT) {
+    if (scores.length >= 2) {
+      // Genug Daten → Nutze direkten Segment-Durchschnitt
       const average = scores.reduce((sum, s) => sum + s, 0) / scores.length;
       segmentAverages.set(segment, average);
+    } else if (scores.length === 1) {
+      // Einzelner Test → Blend 50% Segment + 50% Overall (robuster gegen Ausreißer)
+      const segmentScore = scores[0];
+      const blended = (segmentScore + overallAverage) / 2;
+      segmentAverages.set(segment, blended);
+    } else {
+      // Keine Tests → Nutze Overall-Average als Fallback
+      segmentAverages.set(segment, overallAverage);
     }
   }
 
-  // 4. Erstelle BaselinePoints mit Modulation (pro Stunde, basierend auf Segment-Durchschnitt)
+  // 5. Erstelle BaselinePoints mit Modulation (pro Stunde, basierend auf Segment-Durchschnitt)
   const baselinePoints: BaselinePoint[] = [];
 
   for (let hour = 0; hour < 24; hour++) {
@@ -137,7 +152,7 @@ export async function getUserBaseline(userId: string): Promise<BaselinePoint[]> 
     const segmentAverage = segmentAverages.get(segment);
 
     if (segmentAverage !== undefined) {
-      // Segment hat genug Daten → Modulation für diese Stunde
+      // Segment hat Daten (direkt, geblended oder Fallback Overall-Average)
       const modulation = (segmentAverage - globalValue) * USER_MODULATION_WEIGHT;
       const userValue = Math.round(globalValue + modulation);
 
@@ -148,10 +163,10 @@ export async function getUserBaseline(userId: string): Promise<BaselinePoint[]> 
         hour,
         globalValue,
         userValue: clampedUserValue,
-        hasUserData: true,
+        hasUserData: true, // Immer true, da wir Overall-Average als Fallback haben
       });
     } else {
-      // Segment hat keine Daten → Fallback auf globale Baseline
+      // Sollte nie passieren (alle Segmente haben jetzt mindestens Overall-Average)
       baselinePoints.push({
         hour,
         globalValue,
