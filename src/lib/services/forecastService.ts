@@ -53,10 +53,11 @@ const DECAY_HALF_LIFE_HOURS = 4;
 const MAX_LAST_TEST_WEIGHT = 0.5;
 
 /**
- * Minimum Anzahl Tests pro Stunde für User-Baseline
+ * Minimum Anzahl Tests pro Segment für User-Baseline
+ * Segment = morning/forenoon/midday/afternoon/evening (3-5 Stunden)
  * (Verhindert Overfitting bei einzelnen Tests)
  */
-const MIN_TESTS_PER_HOUR = 2;
+const MIN_TESTS_PER_SEGMENT = 2;
 
 /**
  * Lookback-Periode für User-Baseline (Tage)
@@ -103,44 +104,41 @@ export async function getUserBaseline(userId: string): Promise<BaselinePoint[]> 
     return getAllGlobalBaselinePoints();
   }
 
-  // 2. Gruppiere nach Stunde
-  const hourlyData: Map<number, number[]> = new Map();
+  // 2. Gruppiere nach Segment (statt einzelner Stunden)
+  const segmentData: Map<DaySegment, number[]> = new Map();
 
   for (const session of sessions) {
     const hour = new Date(session.created_at).getHours();
+    const segment = getSegmentForHour(hour);
     const score = session.brain_score;
     
-    if (!hourlyData.has(hour)) {
-      hourlyData.set(hour, []);
+    if (!segmentData.has(segment)) {
+      segmentData.set(segment, []);
     }
-    hourlyData.get(hour)!.push(score);
+    segmentData.get(segment)!.push(score);
   }
 
-  // 3. Berechne Durchschnitt pro Stunde
-  const hourlyAverages: Map<number, HourlyTestData> = new Map();
+  // 3. Berechne Durchschnitt pro Segment
+  const segmentAverages: Map<DaySegment, number> = new Map();
 
-  for (const [hour, scores] of hourlyData.entries()) {
-    if (scores.length >= MIN_TESTS_PER_HOUR) {
+  for (const [segment, scores] of segmentData.entries()) {
+    if (scores.length >= MIN_TESTS_PER_SEGMENT) {
       const average = scores.reduce((sum, s) => sum + s, 0) / scores.length;
-      hourlyAverages.set(hour, {
-        hour,
-        averageScore: average,
-        testCount: scores.length,
-      });
+      segmentAverages.set(segment, average);
     }
   }
 
-  // 4. Erstelle BaselinePoints mit Modulation
+  // 4. Erstelle BaselinePoints mit Modulation (pro Stunde, basierend auf Segment-Durchschnitt)
   const baselinePoints: BaselinePoint[] = [];
 
   for (let hour = 0; hour < 24; hour++) {
     const globalValue = getGlobalBaselineForHour(hour);
-    const userData = hourlyAverages.get(hour);
+    const segment = getSegmentForHour(hour);
+    const segmentAverage = segmentAverages.get(segment);
 
-    if (userData) {
-      // User hat genug Daten für diese Stunde
-      const userAverage = userData.averageScore;
-      const modulation = (userAverage - globalValue) * USER_MODULATION_WEIGHT;
+    if (segmentAverage !== undefined) {
+      // Segment hat genug Daten → Modulation für diese Stunde
+      const modulation = (segmentAverage - globalValue) * USER_MODULATION_WEIGHT;
       const userValue = Math.round(globalValue + modulation);
 
       // Clamp auf 0-100
@@ -153,7 +151,7 @@ export async function getUserBaseline(userId: string): Promise<BaselinePoint[]> 
         hasUserData: true,
       });
     } else {
-      // Keine User-Daten → Fallback auf globale Baseline
+      // Segment hat keine Daten → Fallback auf globale Baseline
       baselinePoints.push({
         hour,
         globalValue,
