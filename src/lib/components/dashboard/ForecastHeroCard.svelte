@@ -16,6 +16,8 @@
   export let typicalForSegment: number;
   export let delta: number | null;
   export let todayTestCount: number;
+  export let segmentReliability: number;
+  export let segmentTestCount: number;
   
   // Label → Pill-Farbe
   const labelStyles: Record<string, string> = {
@@ -60,9 +62,28 @@
     <!-- Score Display (zentriert, groß) -->
     <div class="flex flex-col items-center justify-center py-4">
       {#if forecast.forecastNow !== null}
-        <!-- Score -->
-        <div class="text-8xl sm:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-br from-purple-600 to-blue-500">
-          {forecast.forecastNow}
+        <!-- Score mit Delta-Signal (kompakt, direkt beim Score) -->
+        <div class="relative">
+          <div class="text-8xl sm:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-br from-purple-600 to-blue-500">
+            {forecast.forecastNow}
+          </div>
+          
+          <!-- Delta-Pfeil direkt neben Score (nur wenn |delta| >= 2) -->
+          {#if delta !== null && Math.abs(delta) >= 2}
+            <div class="absolute -right-12 sm:-right-16 top-1/2 -translate-y-1/2">
+              {#if delta > 0}
+                <div class="flex flex-col items-center gap-0.5">
+                  <span class="text-2xl sm:text-3xl text-green-500">▲</span>
+                  <span class="text-xs sm:text-sm font-bold text-green-600">{Math.round(Math.abs(delta))}</span>
+                </div>
+              {:else}
+                <div class="flex flex-col items-center gap-0.5">
+                  <span class="text-2xl sm:text-3xl text-red-500">▼</span>
+                  <span class="text-xs sm:text-sm font-bold text-red-600">{Math.round(Math.abs(delta))}</span>
+                </div>
+              {/if}
+            </div>
+          {/if}
         </div>
         
         <!-- Label Pill (unter Score) -->
@@ -75,50 +96,26 @@
           </div>
         {/if}
         
-        <!-- Optional: Delta-Subline (falls Delta stark abweicht) -->
-        {#if delta !== null}
-          {#if delta <= -10}
-            <p class="text-sm text-base-content/70 mt-2">
-              Heute liegst du deutlich unter deiner üblichen {segmentLabels[forecast.currentSegment]}-Leistung
-            </p>
-          {:else if delta >= 10}
-            <p class="text-sm text-base-content/70 mt-2">
-              Heute liegst du deutlich über deiner üblichen {segmentLabels[forecast.currentSegment]}-Leistung
-            </p>
-          {/if}
-        {/if}
-        
-        <!-- Kompaktes Delta-Signal -->
-        {#if delta !== null}
-          <div class="mt-3 text-center">
-            <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-white rounded-full border border-gray-300">
-              {#if delta > 0}
-                <span class="text-xs text-success font-semibold">▲ {Math.abs(delta)} über deiner üblichen Linie</span>
-              {:else if delta < 0}
-                <span class="text-xs text-error font-semibold">▼ {Math.abs(delta)} unter deiner üblichen Linie</span>
-              {:else}
-                <span class="text-xs text-gray-600">≈ auf deiner üblichen Linie</span>
-              {/if}
+        <!-- Zuverlässigkeit (dynamisch basierend auf Segment-Evidenz) -->
+        <div class="mt-4 text-center">
+          <div class="inline-flex flex-col sm:flex-row items-center gap-2 px-4 py-2 bg-gray-50 rounded-full border border-gray-200">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-medium text-gray-600">Zuverlässigkeit:</span>
+              <span class="text-sm font-bold text-gray-900">
+                {segmentReliability}%
+              </span>
             </div>
-          </div>
-        {/if}
-        
-        <!-- Zuverlässigkeit (statt Evidenz-Badge) -->
-        <div class="mt-3 text-center">
-          <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-gray-50 rounded-full border border-gray-200">
-            <span class="text-xs font-medium text-gray-600">Zuverlässigkeit:</span>
-            <span class="text-xs font-semibold text-gray-900">
-              {forecast.reliabilityPercent} %
+            <span class="text-xs text-gray-500">
+              {#if segmentTestCount >= 3}
+                ({segmentTestCount} Tests {segmentLabels[forecast.currentSegment].toLowerCase()}, {forecast.evidence.testCount} gesamt)
+              {:else if segmentTestCount >= 1}
+                ({segmentTestCount} Test{segmentTestCount === 1 ? '' : 's'} {segmentLabels[forecast.currentSegment].toLowerCase()}, {forecast.evidence.testCount} gesamt)
+              {:else if forecast.evidence.testCount >= 10}
+                (basierend auf {forecast.evidence.testCount} historischen Tests)
+              {:else}
+                ({forecast.evidence.testCount} Test{forecast.evidence.testCount === 1 ? '' : 's'} gesamt)
+              {/if}
             </span>
-            {#if forecast.evidence.testCount > 0}
-              <span class="text-xs text-gray-500">
-                (bisher {forecast.evidence.testCount} Fokus-Check{forecast.evidence.testCount === 1 ? '' : 's'})
-              </span>
-            {:else}
-              <span class="text-xs text-gray-500">
-                (mach deinen ersten Test)
-              </span>
-            {/if}
           </div>
         </div>
       {:else}

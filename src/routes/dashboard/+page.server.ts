@@ -55,6 +55,27 @@ export const load: PageServerLoad = async (event) => {
     .gte('created_at', startOfToday.toISOString())
     .lte('created_at', endOfToday.toISOString());
   
+  // Berechne Evidenz im aktuellen Segment (für dynamische Zuverlässigkeit)
+  const currentSegmentHours = getHoursForSegment(forecast.currentSegment);
+  const testsInCurrentSegment = (todayDeviations?.tests ?? []).filter((test) =>
+    currentSegmentHours.includes(test.hour)
+  );
+  
+  // Zuverlässigkeits-Logik für aktuelles Segment
+  const segmentTestCount = testsInCurrentSegment.length;
+  const totalTestCount = forecast.evidence.testCount;
+  
+  let segmentReliability: number;
+  if (segmentTestCount >= 3) {
+    segmentReliability = 85; // Hoch: 3+ Tests im aktuellen Segment
+  } else if (segmentTestCount >= 1) {
+    segmentReliability = 65; // Mittel: 1-2 Tests im Segment
+  } else if (totalTestCount >= 10) {
+    segmentReliability = 50; // Basis: Nur historische Daten, keine aktuellen Segment-Tests
+  } else {
+    segmentReliability = 35; // Niedrig: Wenig Gesamtdaten und keine Segment-Tests
+  }
+  
   // Berechne Segment-Zusammenfassungen (für Timeline-Kacheln)
   const segmentSummaries = SEGMENT_DEFINITIONS.map((segmentDef) => {
     const segment = segmentDef.segment;
@@ -96,5 +117,7 @@ export const load: PageServerLoad = async (event) => {
     delta,
     todayTestCount: todayTestCount ?? 0,
     segmentSummaries,
+    segmentReliability, // Dynamische Zuverlässigkeit für aktuelles Segment
+    segmentTestCount,   // Tests im aktuellen Segment
   };
 };

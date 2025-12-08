@@ -141,6 +141,8 @@
               typicalForSegment={data.typicalForSegment}
               delta={data.delta}
               todayTestCount={data.todayTestCount}
+              segmentReliability={data.segmentReliability}
+              segmentTestCount={data.segmentTestCount}
             />
             
             <!-- Baseline Chart (VERSCHOBEN: vor Timeline für Hook-Reward) -->
