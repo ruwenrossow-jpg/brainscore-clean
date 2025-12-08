@@ -14,6 +14,7 @@
   import { goto } from '$app/navigation';
   
   export let forecast: ForecastResult;
+  export let todayAverageDelta: number | null = null;
   
   // TODO: Check-in Daten (aktuell Platzhalter - keine Logik-Änderung)
   let todayCheckins = 1; // Aus Props/Store holen wenn verfügbar
@@ -116,6 +117,19 @@
             {/if}
           </div>
         </div>
+        
+        <!-- Heute im Schnitt Delta -->
+        {#if todayAverageDelta !== null && todayAverageDelta !== undefined}
+          <div class="text-sm text-base-content/70 mt-2">
+            {#if todayAverageDelta > 0}
+              Heute liegst du im Schnitt <span class="text-success font-semibold">+{Math.round(todayAverageDelta)}</span> Punkte über deiner üblichen Linie
+            {:else if todayAverageDelta < -2}
+              Heute liegst du im Schnitt <span class="text-error font-semibold">{Math.round(todayAverageDelta)}</span> Punkte unter deiner üblichen Linie
+            {:else}
+              Heute liegst du etwa auf deiner normalen Linie
+            {/if}
+          </div>
+        {/if}
       {:else}
         <div class="text-5xl font-bold text-gray-400">—</div>
         <p class="text-sm text-gray-500 mt-2">Noch kein Score verfügbar</p>

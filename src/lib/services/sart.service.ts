@@ -51,6 +51,8 @@ export class SartService {
    * @see docs/brainrot-sart-short-v1_brainscore-v1.md Section 6
    */
   static computeMetrics(trials: SartTrial[]): SartMetrics {
+    console.log('🔵 [SART Service] Computing metrics for', trials.length, 'trials');
+    
     // Convert legacy SartTrial format to TrialResult format
     const trialResults: TrialResult[] = trials.map((trial) => ({
       isValid: true, // For now, all trials are valid (no app backgrounding detection yet)
@@ -61,9 +63,17 @@ export class SartService {
     }));
 
     // Compute raw metrics, validity, and BrainScore v1
+    console.log('🔵 [SART Service] Computing raw metrics...');
     const rawMetrics = computeRawMetrics(trialResults);
+    console.log('🔵 [SART Service] Raw metrics:', rawMetrics);
+    
+    console.log('🔵 [SART Service] Assessing validity...');
     const validity = assessValidity(rawMetrics);
+    console.log('🔵 [SART Service] Validity:', validity);
+    
+    console.log('🔵 [SART Service] Calculating BrainScore...');
     const brainScoreResult = calculateBrainScore(rawMetrics);
+    console.log('🔵 [SART Service] BrainScore result:', brainScoreResult);
 
     // Return in legacy format for backward compatibility + validity flags
     return {
@@ -90,13 +100,24 @@ export class SartService {
     metrics: SartMetrics, 
     userId?: string | null
   ): Promise<string | null> {
+    console.log('🔵 [SART Service] Starting saveSartSession');
+    console.log('🔵 [SART Service] userId:', userId);
+    console.log('🔵 [SART Service] metrics:', metrics);
+    
     // Auth-Check: Keine anonymen Sessions mehr
     if (!userId) {
-      console.error('❌ Cannot save SART session: userId is required');
+      console.error('❌ [SART Service] Cannot save: userId is required');
+      return null;
+    }
+    
+    // Validity Check
+    if (!metrics.isValid) {
+      console.log('❌ [SART Service] Test invalid:', metrics.invalidReason);
       return null;
     }
     
     try {
+      console.log('🔵 [SART Service] Attempting DB insert...');
       const { data, error } = await supabase
         .from('sart_sessions')
         .insert({
@@ -112,20 +133,35 @@ export class SartService {
         .select('id')
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('❌ [SART Service] DB Error:', error);
+        throw error;
+      }
       
       const sessionId = (data as any)?.id || null;
+      console.log('✅ [SART Service] DB insert successful, sessionId:', sessionId);
       
       // 🔄 Auto-sync DailyScore for today after test completion
       if (sessionId && userId) {
-        const today = new Date().toISOString().split('T')[0];
-        await syncDailyScoreForDate(userId, today);
-        console.log('✅ DailyScore synced for today:', today);
+        try {
+          const today = new Date().toISOString().split('T')[0];
+          console.log('🔵 [SART Service] Syncing DailyScore for:', today);
+          await syncDailyScoreForDate(userId, today);
+          console.log('✅ [SART Service] DailyScore synced successfully');
+        } catch (syncError) {
+          console.error('⚠️ [SART Service] DailyScore sync failed:', syncError);
+          // Don't fail the whole operation if sync fails
+        }
       }
       
+      console.log('✅ [SART Service] saveSartSession completed successfully');
       return sessionId;
     } catch (error) {
-      console.error('❌ Error saving SART session:', error);
+      console.error('💥 [SART Service] CRITICAL ERROR:', error);
+      if (error instanceof Error) {
+        console.error('💥 [SART Service] Error message:', error.message);
+        console.error('💥 [SART Service] Error stack:', error.stack);
+      }
       return null;
     }
   }

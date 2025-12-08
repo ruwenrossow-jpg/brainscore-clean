@@ -135,12 +135,16 @@
           <!-- NEU: Forecast Timeline Section (Mobile-optimiertes Spacing) -->
           <section class="space-y-6 mb-12">
             <!-- Forecast Hero -->
-            <ForecastHeroCard {forecast} />
+            <ForecastHeroCard 
+              {forecast} 
+              todayAverageDelta={data.todayDeviations?.averageDelta}
+            />
             
             <!-- Baseline Chart (VERSCHOBEN: vor Timeline für Hook-Reward) -->
             <MiniBaselineChart 
               {userBaseline}
               currentHour={new Date().getHours()}
+              todayTests={data.todayDeviations?.tests ?? []}
             />
             
             <!-- Day Timeline -->

@@ -13,11 +13,12 @@
    * - Aktueller Zeitpunkt als vertikale Linie
    */
   
-  import type { BaselinePoint } from '$lib/types/forecast';
+  import type { BaselinePoint, TodayTestDeviation } from '$lib/types/forecast';
   import { onMount } from 'svelte';
   
   export let userBaseline: BaselinePoint[];
   export let currentHour: number = new Date().getHours();
+  export let todayTests: TodayTestDeviation[] = [];
   
   let chartError = false;
   let chartContainer: HTMLDivElement;
@@ -203,6 +204,25 @@
               <title>Jetzt ({currentHour}:00)</title>
             </circle>
             
+            <!-- Heutige Tests als Marker -->
+            {#each todayTests as test}
+              {@const x = xScale(test.hour)}
+              {@const y = yScale(test.baselineAtHour)}
+              {@const color = test.delta >= 10 ? '#22c55e' : test.delta <= -10 ? '#ef4444' : '#a855f7'}
+              
+              <circle
+                cx={x}
+                cy={y}
+                r="6"
+                fill={color}
+                stroke="white"
+                stroke-width="2"
+                class="drop-shadow-md"
+              >
+                <title>Test: {test.score} ({test.delta > 0 ? '+' : ''}{Math.round(test.delta)})</title>
+              </circle>
+            {/each}
+            
             <!-- X-Achse Labels -->
             {#each xLabels as { x, label }}
               <text
@@ -248,6 +268,16 @@
           <div class="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
           <span>Jetzt</span>
         </div>
+        {#if todayTests.length > 0}
+          <div class="flex items-center gap-2">
+            <div class="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+            <span>Heute über Baseline</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
+            <span>Heute unter Baseline</span>
+          </div>
+        {/if}
       </div>
     {:else}
       <!-- Fallback: Tabelle -->

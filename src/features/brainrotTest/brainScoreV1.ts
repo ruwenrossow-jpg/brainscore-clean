@@ -231,18 +231,39 @@ export function calculateDisciplineScore(validTrialRatio: number): number {
  * @see docs/brainrot-sart-short-v1_brainscore-v1.md Section 6.5
  */
 export function calculateBrainScore(rawMetrics: RawMetrics): BrainScoreResult {
+	console.log('🧮 [BrainScore] Input rawMetrics:', rawMetrics);
+	
+	// Safety checks
+	if (rawMetrics.nValid === 0) {
+		console.error('❌ [BrainScore] nValid is 0!');
+		throw new Error('No valid trials - cannot calculate BrainScore');
+	}
+	
+	if (rawMetrics.nGo === 0) {
+		console.error('❌ [BrainScore] nGo is 0!');
+		throw new Error('No Go trials - cannot calculate BrainScore');
+	}
+	
 	// Calculate sub-scores
+	console.log('🧮 [BrainScore] Calculating sub-scores...');
 	const accuracyScore = calculateAccuracyScore(
 		rawMetrics.commissionErrorRate,
 		rawMetrics.omissionErrorRate
 	);
+	console.log('🧮 [BrainScore] accuracyScore:', accuracyScore);
+	
 	const speedScore = calculateSpeedScore(
 		rawMetrics.meanGoRT,
 		rawMetrics.commissionErrorRate,
 		rawMetrics.omissionErrorRate
 	);
+	console.log('🧮 [BrainScore] speedScore:', speedScore);
+	
 	const consistencyScore = calculateConsistencyScore(rawMetrics.goRtSD);
+	console.log('🧮 [BrainScore] consistencyScore:', consistencyScore);
+	
 	const disciplineScore = calculateDisciplineScore(rawMetrics.validTrialRatio);
+	console.log('🧮 [BrainScore] disciplineScore:', disciplineScore);
 
 	// NEW: Weighted mean (60%) + minimum subscore (40%)
 	const weightedMean =
@@ -280,8 +301,10 @@ export function calculateBrainScore(rawMetrics: RawMetrics): BrainScoreResult {
 
 	// Final clamping (Rounding passiert im return)
 	brainScore = Math.max(0, Math.min(100, brainScore));
+	
+	console.log('🧮 [BrainScore] Final brainScore:', brainScore);
 
-	return {
+	const result = {
 		brainScore: Math.round(brainScore * 10) / 10, // Round to 1 decimal place
 		accuracyScore: Math.round(accuracyScore * 10) / 10,
 		speedScore: Math.round(speedScore * 10) / 10,
@@ -289,6 +312,9 @@ export function calculateBrainScore(rawMetrics: RawMetrics): BrainScoreResult {
 		disciplineScore: Math.round(disciplineScore * 10) / 10,
 		rawMetrics
 	};
+	
+	console.log('✅ [BrainScore] Result:', result);
+	return result;
 }
 
 /**
