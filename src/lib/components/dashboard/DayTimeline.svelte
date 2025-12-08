@@ -8,10 +8,12 @@
    * - Highlight des aktuellen Segments
    * - Indikator ob User-Daten vorhanden (hasUserData)
    * - Heutige Test-Counts und Delta vs. Baseline
+   * - Integrierte Story für aktuelles Segment
    */
   
   import type { DaySegment, BaselinePoint } from '$lib/types/forecast';
   import { SEGMENT_DEFINITIONS } from '$lib/types/forecast';
+  import CurrentSegmentStory from './CurrentSegmentStory.svelte';
   
   export let currentSegment: DaySegment;
   export let userBaseline: BaselinePoint[];
@@ -184,19 +186,8 @@
       </div>
     </div>
     
-    <!-- Kontext-Zeile für aktives Segment -->
-    {#each SEGMENT_DEFINITIONS.filter(s => s.segment === currentSegment) as activeSegmentDef}
-      <div class="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg text-sm text-gray-700">
-        <span class="font-semibold text-purple-700">
-          {activeSegmentDef.segment === 'morning' ? 'Morgens' :
-           activeSegmentDef.segment === 'forenoon' ? 'Vormittags' :
-           activeSegmentDef.segment === 'midday' ? 'Mittags' :
-           activeSegmentDef.segment === 'afternoon' ? 'Nachmittags' :
-           'Abends'}:
-        </span>
-        {activeSegmentDef.description}
-      </div>
-    {/each}
+    <!-- Story für aktuelles Segment -->
+    <CurrentSegmentStory {currentSegment} {segmentSummaries} />
   </div>
 </div>
 

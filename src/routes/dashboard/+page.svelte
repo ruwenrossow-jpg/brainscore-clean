@@ -24,7 +24,6 @@
   import ForecastHeroCard from '$lib/components/dashboard/ForecastHeroCard.svelte';
   import DayTimeline from '$lib/components/dashboard/DayTimeline.svelte';
   import MiniBaselineChart from '$lib/components/dashboard/MiniBaselineChart.svelte';
-  import DaySegmentStoryCarousel from '$lib/components/dashboard/DaySegmentStoryCarousel.svelte';
   
   // NEU: Server-Load Props (aus +page.server.ts)
   import type { PageData } from './$types';
@@ -152,16 +151,10 @@
               todayTests={data.todayDeviations?.tests ?? []}
             />
             
-            <!-- Day Timeline -->
+            <!-- Day Timeline mit integrierter Story -->
             <DayTimeline 
               currentSegment={forecast.currentSegment}
               {userBaseline}
-              segmentSummaries={data.segmentSummaries}
-            />
-            
-            <!-- Story Carousel (unterhalb Timeline) -->
-            <DaySegmentStoryCarousel
-              currentSegment={forecast.currentSegment}
               segmentSummaries={data.segmentSummaries}
             />
           </section>
