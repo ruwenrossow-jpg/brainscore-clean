@@ -24,8 +24,6 @@ export const load: PageServerLoad = async (event) => {
   const now = new Date();
   const supabase = event.locals.supabase;
   
-  console.log('🐛 [Dashboard Server] Loading data for user:', userId);
-  
   // Parallel laden für bessere Performance
   // WICHTIG: getUserBaseline muss vor getTodayDeviations geladen werden
   const userBaseline = await getUserBaseline(supabase, userId);
@@ -34,11 +32,6 @@ export const load: PageServerLoad = async (event) => {
     getForecastForNow(supabase, userId, now),
     getTodayDeviations(supabase, userId, userBaseline, now),
   ]);
-  
-  console.log('🐛 [Dashboard Server] UserBaseline loaded:', userBaseline.length, 'points');
-  console.log('🐛 [Dashboard Server] Points with hasUserData=true:', userBaseline.filter(p => p.hasUserData).length);
-  console.log('🐛 [Dashboard Server] Sample baseline point (hour 14):', userBaseline.find(p => p.hour === 14));
-  console.log('🐛 [Dashboard Server] Today\'s tests:', todayDeviations.tests.length, 'Average delta:', todayDeviations.averageDelta);
   
   return {
     profile,

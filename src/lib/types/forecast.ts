@@ -10,6 +10,17 @@
 // ============================================================================
 
 /**
+ * Evidenz-Informationen zur Forecast-Qualität
+ */
+export interface ForecastEvidence {
+  /** Evidenz-Level (entspricht confidence) */
+  level: 'low' | 'medium' | 'high';
+  
+  /** Anzahl Tests, auf denen die Schätzung basiert */
+  testCount: number;
+}
+
+/**
  * Hauptergebnis der Forecast-Berechnung für einen Zeitpunkt
  */
 export interface ForecastResult {
@@ -27,6 +38,9 @@ export interface ForecastResult {
 
   /** Typischer Score für dieses Segment (aus User-Baseline, oder null) */
   typicalAtThisTime: number | null;
+
+  /** Evidenz-Informationen (Testanzahl + Level) */
+  evidence: ForecastEvidence;
 }
 
 /**

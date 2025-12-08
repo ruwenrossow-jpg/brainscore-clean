@@ -22,6 +22,7 @@ import type {
   DaySegment,
   ConfidenceLevel,
   ForecastLabel,
+  ForecastEvidence,
 } from '$lib/types/forecast';
 import {
   getSegmentForHour,
@@ -428,20 +429,10 @@ export async function getForecastForNow(
   if (localStats.lastLocalTestTimestamp) {
     const diffMs = now.getTime() - localStats.lastLocalTestTimestamp.getTime();
     minutesAgo = diffMs / (1000 * 60);
-    
-    console.log('🔥 [FRESH TEST DEBUG]');
-    console.log('  now:', now.toISOString());
-    console.log('  lastLocalTestTimestamp:', localStats.lastLocalTestTimestamp.toISOString());
-    console.log('  minutesAgo:', minutesAgo);
-    console.log('  threshold:', FRESH_TEST_THRESHOLD_MINUTES);
-    console.log('  nLocal:', localStats.nLocal);
-    console.log('  recentLocalMean:', localStats.recentLocalMean);
   }
 
   // Case 1: Gerade frisch getestet (≤5 Minuten her)
   if (localStats.nLocal > 0 && minutesAgo !== null && minutesAgo <= FRESH_TEST_THRESHOLD_MINUTES) {
-    console.log('✅ FRESH TEST CASE TRIGGERED!');
-    console.log('  wLocal: 0.95, wBaseline: 0.05');
     // 95% Gewicht auf den direkten Messwert, 5% auf Baseline
     // Rationale: Nutzer erwartet, dass Dashboard-Score = soeben gemessener Score
     const wLocal = 0.95;
@@ -455,16 +446,12 @@ export async function getForecastForNow(
   }
   // Case 2: Keine Tests in diesem Local-Window
   else if (localStats.nLocal === 0 || localStats.recentLocalMean === null) {
-    console.log('📊 CASE 2: No local tests - using baseline');
     // Reine Baseline-Prognose
     forecastNow = Math.round(baselineValue);
     label = getLabelForScore(forecastNow);
   }
   // Case 3: Tests vorhanden, aber nicht frisch (>5 Minuten her)
   else {
-    console.log('⏰ CASE 3: Tests exist but not fresh - using recency weighting');
-    console.log('  minutesAgo:', minutesAgo);
-    
     // Verwende bestehende Recency-Gewichtung basierend auf Stundenabstand
     const hoursAgo = minutesAgo !== null ? minutesAgo / 60 : Number.POSITIVE_INFINITY;
 
@@ -481,19 +468,19 @@ export async function getForecastForNow(
 
     const wBaseline = 1 - wLocal;
     const localMean = localStats.recentLocalMean ?? baselineValue;
-    
-    console.log('  hoursAgo:', hoursAgo);
-    console.log('  wLocal:', wLocal, 'wBaseline:', wBaseline);
-    console.log('  localMean:', localMean, 'baselineValue:', baselineValue);
 
     // Kombiniere Local-Mean + Baseline
     const combined = wLocal * localMean + wBaseline * baselineValue;
     forecastNow = Math.round(Math.max(0, Math.min(100, combined)));
-    
-    console.log('  combined:', combined, '→ forecastNow:', forecastNow);
 
     label = getLabelForScore(forecastNow);
   }
+
+  // 5. Erzeuge Evidenz-Struktur aus totalTests
+  const evidence: ForecastEvidence = {
+    level: confidence,
+    testCount: localStats.totalTests
+  };
 
   return {
     forecastNow,
@@ -501,6 +488,7 @@ export async function getForecastForNow(
     confidence,
     currentSegment,
     typicalAtThisTime,
+    evidence,
   };
 }
 

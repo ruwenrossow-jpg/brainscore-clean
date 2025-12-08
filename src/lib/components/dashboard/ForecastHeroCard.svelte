@@ -43,6 +43,13 @@
     evening: 'Abends',
   };
   
+  // Evidenz-Level → Lesbare Texte
+  const evidenceLabel = (level: 'low' | 'medium' | 'high'): string => {
+    if (level === 'high') return 'hoch';
+    if (level === 'medium') return 'mittel';
+    return 'niedrig';
+  };
+  
   function handleTestNow() {
     goto('/test');
   }
@@ -87,14 +94,28 @@
             {forecast.label === 'fokussiert' ? '⚡ Fokussiert' :
              forecast.label === 'stabil' ? '✓ Stabil' :
              forecast.label === 'fragil' ? '⚠ Fragil' :
-             '○ Zerstreut'} (vorläufig)
+             '○ Zerstreut'}
           </div>
         {/if}
         
-        <!-- Unter-Label -->
-        <p class="text-xs text-gray-500 mt-2">
-          BrainScore · vorläufige Einschätzung
-        </p>
+        <!-- Evidenz-Anzeige -->
+        <div class="mt-3 text-center">
+          <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-gray-50 rounded-full border border-gray-200">
+            <span class="text-xs font-medium text-gray-600">Evidenz:</span>
+            <span class="text-xs font-semibold text-gray-900">
+              {evidenceLabel(forecast.evidence.level)}
+            </span>
+            {#if forecast.evidence.testCount > 0}
+              <span class="text-xs text-gray-500">
+                · {forecast.evidence.testCount} Test{forecast.evidence.testCount === 1 ? '' : 's'}
+              </span>
+            {:else}
+              <span class="text-xs text-gray-500">
+                · Mach deinen ersten Test
+              </span>
+            {/if}
+          </div>
+        </div>
       {:else}
         <div class="text-5xl font-bold text-gray-400">—</div>
         <p class="text-sm text-gray-500 mt-2">Noch kein Score verfügbar</p>
