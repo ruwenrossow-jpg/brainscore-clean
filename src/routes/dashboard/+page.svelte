@@ -137,7 +137,9 @@
             <!-- Forecast Hero -->
             <ForecastHeroCard 
               {forecast} 
-              todayAverageDelta={data.todayDeviations?.averageDelta}
+              typicalForSegment={data.typicalForSegment}
+              delta={data.delta}
+              todayTestCount={data.todayTestCount}
             />
             
             <!-- Baseline Chart (VERSCHOBEN: vor Timeline für Hook-Reward) -->

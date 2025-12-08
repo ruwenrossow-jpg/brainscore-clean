@@ -28,6 +28,7 @@ import {
   getSegmentForHour,
   getLabelForScore,
   getConfidenceForTestCount,
+  reliabilityFromConfidence,
 } from '$lib/types/forecast';
 
 // Type Helpers
@@ -515,6 +516,9 @@ export async function getForecastForNow(
     testCount: localStats.totalTests
   };
 
+  // 6. Berechne UI-freundlichen Zuverlässigkeitsprozentsatz
+  const reliabilityPercent = reliabilityFromConfidence(confidence);
+
   return {
     forecastNow,
     label,
@@ -522,6 +526,7 @@ export async function getForecastForNow(
     currentSegment,
     typicalAtThisTime,
     evidence,
+    reliabilityPercent,
   };
 }
 

@@ -41,6 +41,9 @@ export interface ForecastResult {
 
   /** Evidenz-Informationen (Testanzahl + Level) */
   evidence: ForecastEvidence;
+
+  /** UI-freundliche Zuverlässigkeitsanzeige (0-100) */
+  reliabilityPercent: number;
 }
 
 /**
@@ -251,6 +254,56 @@ export function getConfidenceForTestCount(totalTests: number): ConfidenceLevel {
   if (totalTests >= 16) return 'high';
   if (totalTests >= 6) return 'medium';
   return 'low';
+}
+
+/**
+ * Hilfsfunktion: Konvertiert Confidence zu Prozent (UI-freundlich)
+ * 
+ * @param confidence - Confidence-Level
+ * @returns Prozentsatz (0-100)
+ */
+export function reliabilityFromConfidence(confidence: ConfidenceLevel): number {
+  if (confidence === 'high') return 80;
+  if (confidence === 'medium') return 60;
+  return 40;
+}
+
+/**
+ * Hilfsfunktion: Gibt alle Stunden für ein Segment zurück
+ * 
+ * @param segment - Tages-Segment
+ * @returns Array von Stunden (0-23)
+ */
+export function getHoursForSegment(segment: DaySegment): number[] {
+  switch (segment) {
+    case 'morning':
+      return [6, 7, 8, 9]; // 06:00-09:59
+    case 'forenoon':
+      return [10, 11]; // 10:00-11:59
+    case 'midday':
+      return [12, 13, 14, 15]; // 12:00-15:59
+    case 'afternoon':
+      return [16, 17, 18, 19]; // 16:00-19:59
+    case 'evening':
+      return [20, 21, 22, 23, 0, 1, 2, 3, 4, 5]; // 20:00-05:59
+  }
+}
+
+/**
+ * Hilfsfunktion: Berechnet typischen Score für ein Segment aus Baseline
+ * 
+ * @param userBaseline - User-Baseline (24h)
+ * @param segment - Tages-Segment
+ * @returns Durchschnittlicher Score für das Segment
+ */
+export function getTypicalScoreForSegment(
+  userBaseline: BaselinePoint[],
+  segment: DaySegment
+): number {
+  const hours = getHoursForSegment(segment);
+  const values = hours.map(h => userBaseline[h].userValue ?? userBaseline[h].globalValue);
+  const avg = values.reduce((sum, v) => sum + v, 0) / values.length;
+  return Math.round(Math.max(0, Math.min(100, avg)));
 }
 
 // ============================================================================

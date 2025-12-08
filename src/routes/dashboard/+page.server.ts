@@ -15,6 +15,7 @@
 import type { PageServerLoad } from './$types';
 import { requireOnboarding } from '$lib/server/auth.guard';
 import { getForecastForNow, getUserBaseline, getTodayDeviations } from '$lib/services/forecastService';
+import { getTypicalScoreForSegment } from '$lib/types/forecast';
 
 export const load: PageServerLoad = async (event) => {
   // Guard: Nur eingeloggte User mit abgeschlossenem Onboarding
@@ -33,10 +34,34 @@ export const load: PageServerLoad = async (event) => {
     getTodayDeviations(supabase, userId, userBaseline, now),
   ]);
   
+  // Berechne typischen Score für aktuelles Segment
+  const typicalForSegment = getTypicalScoreForSegment(userBaseline, forecast.currentSegment);
+  
+  // Berechne Delta vs. segment-spezifische Baseline
+  const delta = forecast.forecastNow !== null 
+    ? forecast.forecastNow - typicalForSegment 
+    : null;
+  
+  // Zähle heutige Tests
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+  const endOfToday = new Date(now);
+  endOfToday.setHours(23, 59, 59, 999);
+  
+  const { count: todayTestCount } = await supabase
+    .from('sart_sessions')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId)
+    .gte('created_at', startOfToday.toISOString())
+    .lte('created_at', endOfToday.toISOString());
+  
   return {
     profile,
     forecast,
     userBaseline,
     todayDeviations,
+    typicalForSegment,
+    delta,
+    todayTestCount: todayTestCount ?? 0,
   };
 };
