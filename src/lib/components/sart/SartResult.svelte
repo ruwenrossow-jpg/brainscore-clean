@@ -3,7 +3,7 @@
    * SART Result - Minimalistisches Ergebnis-Display
    */
   
-  import { goto } from '$app/navigation';
+  import { goto, invalidateAll } from '$app/navigation';
   import { getScoreBand } from '$lib/config/scoring';
   import type { SartMetrics } from '$lib/types/sart.types';
   
@@ -20,7 +20,9 @@
     metrics ? getScoreBand(metrics.score) : null
   );
   
-  function goToDashboard() {
+  async function goToDashboard() {
+    // Invalidate all server loads to ensure fresh forecast data
+    await invalidateAll();
     goto('/dashboard');
   }
 </script>

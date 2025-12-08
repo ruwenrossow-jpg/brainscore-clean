@@ -14,7 +14,7 @@
   import SartTest from '$lib/components/sart/SartTest.svelte';
   import SartResult from '$lib/components/sart/SartResult.svelte';
   import DigitalCheckIn from '$features/digitalLog/DigitalCheckIn.svelte';
-  import { goto } from '$app/navigation';
+  import { goto, invalidateAll } from '$app/navigation';
   import { isAuthenticated } from '$lib/stores/auth.store';
 
   type ExtendedTestStep = TestStep | 'digital-checkin';
@@ -50,13 +50,17 @@
     showDigitalCheckIn = true;
   }
   
-  function handleDigitalCheckInComplete() {
+  async function handleDigitalCheckInComplete() {
     console.log('✅ Digital Check-in completed');
+    // Invalidate all server loads to ensure fresh forecast data
+    await invalidateAll();
     goto('/dashboard');
   }
   
-  function handleDigitalCheckInSkip() {
+  async function handleDigitalCheckInSkip() {
     console.log('⏭️ Digital Check-in skipped');
+    // Invalidate all server loads to ensure fresh forecast data
+    await invalidateAll();
     goto('/dashboard');
   }
 </script>
