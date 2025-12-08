@@ -238,3 +238,38 @@ export function getConfidenceForTestCount(totalTests: number): ConfidenceLevel {
   if (totalTests >= 6) return 'medium';
   return 'low';
 }
+
+// ============================================================================
+// TODAY'S DEVIATIONS (Heutige Tagesform)
+// ============================================================================
+
+/**
+ * Abweichung eines einzelnen heutigen Tests von der Baseline
+ */
+export interface TodayTestDeviation {
+  /** Zeitstempel des Tests */
+  timestamp: Date;
+  
+  /** Stunde des Tests (0-23) */
+  hour: number;
+  
+  /** Gemessener BrainScore */
+  score: number;
+  
+  /** Baseline-Wert zur Test-Stunde */
+  baselineAtHour: number;
+  
+  /** Abweichung (score - baselineAtHour) */
+  delta: number;
+}
+
+/**
+ * Zusammenfassung aller heutigen Abweichungen
+ */
+export interface TodayDeviationsSummary {
+  /** Liste aller heutigen Tests mit Abweichungen */
+  tests: TodayTestDeviation[];
+  
+  /** Durchschnittliche Abweichung über alle heutigen Tests (null wenn keine Tests) */
+  averageDelta: number | null;
+}

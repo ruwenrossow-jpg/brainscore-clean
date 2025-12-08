@@ -81,9 +81,13 @@ function clamp(value: number, min: number, max: number): number {
 /**
  * Calculates AccuracyScore (0-100) based on commission and omission error rates
  * 
- * Formula:
- * accuracy = 1 - (commissionErrorRate + omissionErrorRate) / 2
- * AccuracyScore = 100 × accuracy
+ * NEW Formula (v1.1):
+ * - Asymmetrische Gewichtung: Omission Errors (Vigilanzverlust) schwerer als Commission Errors (Impulsivität)
+ * - Omission: 70%, Commission: 30%
+ * - Nichtlineare Verschärfung (Exponent 1.3) für stärkere Differenzierung
+ * 
+ * Rationale: Omission Errors sind charakteristischer für Vigilanzverlust/Mind-Wandering,
+ * während Commission Errors eher Impulsivität zeigen.
  * 
  * @see docs/brainrot-sart-short-v1_brainscore-v1.md Section 6.1
  */
@@ -91,9 +95,25 @@ export function calculateAccuracyScore(
 	commissionErrorRate: number,
 	omissionErrorRate: number
 ): number {
-	const accuracy = 1 - (commissionErrorRate + omissionErrorRate) / 2;
-	const boundedAccuracy = clamp(accuracy, 0, 1);
-	return boundedAccuracy * 100;
+	// Gewichtung: Omission (Vigilanzverlust) stärker als Commission (Impulsivität)
+	const omissionWeight = 0.7;
+	const commissionWeight = 0.3;
+
+	const totalError = omissionWeight * omissionErrorRate + commissionWeight * commissionErrorRate;
+
+	// Basis-Accuracy (0–1), mit unterer Grenze 0
+	const accuracyBase = Math.max(0, 1 - totalError);
+
+	// Leichte nichtlineare Verschärfung:
+	// Werte <1 werden durch die Potenz etwas nach unten gezogen,
+	// damit moderate Fehler stärker sichtbar werden.
+	const accuracyExponent = 1.3;
+	const accuracyScaled = Math.pow(accuracyBase, accuracyExponent);
+
+	let accuracyScore = Math.round(accuracyScaled * 100);
+	accuracyScore = Math.max(0, Math.min(100, accuracyScore));
+
+	return accuracyScore;
 }
 
 /**
@@ -165,35 +185,45 @@ export function calculateConsistencyScore(goRtSD: number): number {
 /**
  * Calculates DisciplineScore (0-100) based on protocol quality
  * 
- * Valid trial ratio indicates engagement and technical quality:
- * - Excellent (≥90% valid): 100
- * - Good (80-90% valid): 90
- * - Fair (60-80% valid): 75
- * - Poor (<60% valid): 60
+ * NEW Thresholds (v1.1) - Deutlich verschärft:
+ * - Excellent (≥95% valid): 100
+ * - Good (90-95% valid): 85
+ * - Fair (75-90% valid): 60
+ * - Poor (<75% valid): 30
  * 
- * Low valid trial ratio may indicate technical issues or lack of engagement
- * (e.g., app backgrounding, distractions).
+ * Rationale: Schlechte Protokollqualität (viele ungültige Trials durch App-Backgrounding,
+ * Unterbrechungen etc.) muss stärker bestraft werden, um die Skala nach unten zu öffnen.
  * 
  * @see docs/brainrot-sart-short-v1_brainscore-v1.md Section 6.4
  */
 export function calculateDisciplineScore(validTrialRatio: number): number {
-	if (validTrialRatio >= 0.9) {
+	if (validTrialRatio >= 0.95) {
 		return 100;
-	} else if (validTrialRatio >= 0.8) {
-		return 90;
-	} else if (validTrialRatio >= 0.6) {
-		return 75;
-	} else {
+	} else if (validTrialRatio >= 0.9) {
+		return 85;
+	} else if (validTrialRatio >= 0.75) {
 		return 60;
+	} else {
+		return 30;
 	}
 }
 
 /**
  * Calculates the complete BrainScore v1 from raw metrics
  * 
- * BrainScore v1 = 0.30 × AccuracyScore + 0.35 × SpeedScore + 0.25 × ConsistencyScore + 0.10 × DisciplineScore
+ * NEW Aggregation (v1.1):
+ * - Kombination aus gewichteter Mitte (60%) und schlechtestem Subscore (40%)
+ * - Weighted Mean = 0.30 × Accuracy + 0.35 × Speed + 0.25 × Consistency + 0.10 × Discipline
+ * - Final Score = 0.6 × WeightedMean + 0.4 × min(all subscores)
  * 
- * Updated weighting (2025-01): RT/Speed more important, Accuracy slightly reduced
+ * Rationale: Ein einzelner extrem schlechter Subscore soll das Gesamtergebnis stärker beeinflussen,
+ * auch wenn andere Subscores gut sind. Dies verhindert, dass "Spezialisten" mit einseitiger
+ * Performance hohe Scores erreichen.
+ * 
+ * Floor-Regeln (v1.1):
+ * - Omission-Rate ≥50%: Score ≤20 (starke Vigilanzprobleme)
+ * - ValidTrialRatio <60%: Score ≤30 (Protokollkatastrophe)
+ * - GoRtSD >400ms: Score ≤30 (extreme Varianz/instabile Aufmerksamkeit)
  * 
  * @param rawMetrics The aggregated metrics from the test session
  * @returns Complete BrainScore result with sub-scores and composite score
@@ -214,9 +244,42 @@ export function calculateBrainScore(rawMetrics: RawMetrics): BrainScoreResult {
 	const consistencyScore = calculateConsistencyScore(rawMetrics.goRtSD);
 	const disciplineScore = calculateDisciplineScore(rawMetrics.validTrialRatio);
 
-	// Calculate weighted composite score (updated weights 2025-01)
-	const brainScore =
+	// NEW: Weighted mean (60%) + minimum subscore (40%)
+	const weightedMean =
 		0.3 * accuracyScore + 0.35 * speedScore + 0.25 * consistencyScore + 0.1 * disciplineScore;
+
+	const minSubscore = Math.min(accuracyScore, speedScore, consistencyScore, disciplineScore);
+
+	// Kombination: minSubscore erhält 40% Einfluss, um Ausreißer nach unten stark wirken zu lassen
+	let brainScore = 0.6 * weightedMean + 0.4 * minSubscore;
+
+	// Vorläufig clampen auf 0–100
+	brainScore = Math.max(0, Math.min(100, brainScore));
+
+	// ============================================================================
+	// FLOOR-REGELN: Harte Deckel nach unten für Katastrophenmuster
+	// ============================================================================
+
+	// 1) Starke Vigilanz-Probleme: viele Omission Errors
+	// Rationale: ≥50% Omission = Hälfte der Go-Trials verpasst → schwerer Vigilanzverlust
+	if (rawMetrics.omissionErrorRate >= 0.5) {
+		brainScore = Math.min(brainScore, 20);
+	}
+
+	// 2) Protokollkatastrophe: sehr niedrige Protokollqualität
+	// Rationale: <60% valid trials = massives Backgrounding/Unterbrechungen → Test unzuverlässig
+	if (rawMetrics.validTrialRatio < 0.6) {
+		brainScore = Math.min(brainScore, 30);
+	}
+
+	// 3) Extreme Varianz der Reaktionszeiten: sehr instabile Aufmerksamkeit
+	// Rationale: >400ms SD = massive RT-Schwankungen → inkonsistente Aufmerksamkeit
+	if (rawMetrics.goRtSD > 400) {
+		brainScore = Math.min(brainScore, 30);
+	}
+
+	// Final clamping (Rounding passiert im return)
+	brainScore = Math.max(0, Math.min(100, brainScore));
 
 	return {
 		brainScore: Math.round(brainScore * 10) / 10, // Round to 1 decimal place

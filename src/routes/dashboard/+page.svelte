@@ -130,23 +130,23 @@
         </div>
       {:else if dashboardData}
         
-        <div class="space-y-6">
+        <div class="space-y-8">
           
-          <!-- NEU: Forecast Timeline Section -->
-          <section class="space-y-6 mb-10">
+          <!-- NEU: Forecast Timeline Section (Mobile-optimiertes Spacing) -->
+          <section class="space-y-6 mb-12">
             <!-- Forecast Hero -->
             <ForecastHeroCard {forecast} />
+            
+            <!-- Baseline Chart (VERSCHOBEN: vor Timeline für Hook-Reward) -->
+            <MiniBaselineChart 
+              {userBaseline}
+              currentHour={new Date().getHours()}
+            />
             
             <!-- Day Timeline -->
             <DayTimeline 
               currentSegment={forecast.currentSegment}
               {userBaseline}
-            />
-            
-            <!-- Baseline Chart -->
-            <MiniBaselineChart 
-              {userBaseline}
-              currentHour={new Date().getHours()}
             />
           </section>
           

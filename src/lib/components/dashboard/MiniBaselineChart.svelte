@@ -22,10 +22,10 @@
   let chartError = false;
   let chartContainer: HTMLDivElement;
   
-  // Chart Dimensions
+  // Chart Dimensions (mobile-optimiert)
   const width = 800;
-  const height = 300;
-  const padding = { top: 20, right: 30, bottom: 40, left: 40 };
+  const height = 280;
+  const padding = { top: 20, right: 20, bottom: 35, left: 35 };
   const chartWidth = width - padding.left - padding.right;
   const chartHeight = height - padding.top - padding.bottom;
   
@@ -58,16 +58,14 @@
   // User Baseline Pfad (nur Punkte mit User-Daten verbinden)
   $: userPath = (() => {
     const userPoints = userBaseline
-      .map((p, i) => ({
+      .filter((p) => p.hasUserData) // NUR Punkte mit User-Daten!
+      .map((p) => ({
         hour: p.hour,
         value: p.userValue ?? p.globalValue,
-        hasData: p.hasUserData,
-        index: i,
       }))
       .map((p) => ({
         x: xScale(p.hour),
         y: yScale(p.value),
-        hasData: p.hasData,
       }));
     
     return generatePath(userPoints);
@@ -80,16 +78,17 @@
       hour: p.hour,
       x: xScale(p.hour),
       y: yScale(p.userValue ?? p.globalValue),
+      value: p.userValue ?? p.globalValue,
     }));
   
   // Aktueller Zeitpunkt (vertikale Linie)
   $: currentX = xScale(currentHour);
   
-  // X-Achse Labels (alle 4 Stunden)
-  $: xLabels = [0, 4, 8, 12, 16, 20].map((hour) => ({
+  // X-Achse Labels (mobile-optimiert: weniger Labels)
+  $: xLabels = [0, 6, 12, 18].map((hour) => ({
     hour,
     x: xScale(hour),
-    label: `${hour}:00`,
+    label: `${hour}h`,
   }));
   
   // Y-Achse Labels (0, 50, 100)
@@ -114,14 +113,21 @@
 <div class="card-modern" bind:this={chartContainer}>
   <div class="card-body">
     <!-- Header -->
-    <h3 class="text-xl font-bold text-base-content mb-4">
-      Deine Baseline-Kurve
-    </h3>
+    <div class="mb-6">
+      <h3 class="text-2xl font-bold text-gray-900 mb-2">
+        So verläuft dein Tag typischerweise
+      </h3>
+      <p class="text-sm text-gray-600">
+        <span class="font-medium text-purple-600">Lila</span>: deine persönliche Linie · 
+        <span class="font-medium text-gray-400">Grau</span>: allgemeine Norm · 
+        <span class="font-medium text-orange-500">Orange</span>: jetzt
+      </p>
+    </div>
     
     {#if !chartError}
-      <!-- SVG Chart -->
-      <div class="chart-wrapper">
-        <svg {width} {height} viewBox="0 0 {width} {height}" class="w-full h-auto">
+      <!-- SVG Chart (responsive, touch-friendly) -->
+      <div class="chart-wrapper overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+        <svg {width} {height} viewBox="0 0 {width} {height}" class="w-full h-auto min-w-[600px] sm:min-w-0">
           <g transform={`translate(${padding.left}, ${padding.top})`}>
             <!-- Y-Achse Grid Lines -->
             {#each yLabels as { value, y }}
@@ -147,45 +153,55 @@
             />
             
             <!-- User Baseline (durchgezogene Linie) -->
-            <path
-              d={userPath}
-              fill="none"
-              stroke="hsl(var(--p))"
-              stroke-width="3"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
+            {#if userPath}
+              <path
+                d={userPath}
+                fill="none"
+                stroke="#9333ea"
+                stroke-width="4"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="drop-shadow-md"
+              />
+            {/if}
             
-            <!-- Datenpunkte (User-Daten) -->
-            {#each dataPoints as { x, y, hour }}
+            <!-- Datenpunkte (User-Daten) - größer für Mobile -->
+            {#each dataPoints as { x, y, hour, value }}
               <circle
                 cx={x}
                 cy={y}
-                r="5"
-                fill="hsl(var(--p))"
-                stroke="hsl(var(--b1))"
-                stroke-width="2"
+                r="7"
+                fill="#9333ea"
+                stroke="white"
+                stroke-width="3"
+                class="drop-shadow-lg cursor-pointer hover:r-9 transition-all"
               >
-                <title>{hour}:00</title>
+                <title>{hour}:00 - Score: {Math.round(value)}</title>
               </circle>
             {/each}
             
-            <!-- Aktueller Zeitpunkt (vertikale Linie) -->
+            <!-- Aktueller Zeitpunkt (vertikale Linie + Marker oben) -->
             <line
               x1={currentX}
               y1="0"
               x2={currentX}
               y2={chartHeight}
-              stroke="hsl(var(--s))"
-              stroke-width="2"
-              stroke-dasharray="2 2"
+              stroke="#f97316"
+              stroke-width="2.5"
+              stroke-dasharray="4 2"
+              opacity="0.7"
             />
             <circle
               cx={currentX}
-              cy="-5"
-              r="4"
-              fill="hsl(var(--s))"
-            />
+              cy="0"
+              r="6"
+              fill="#f97316"
+              stroke="white"
+              stroke-width="2"
+              class="drop-shadow-lg"
+            >
+              <title>Jetzt ({currentHour}:00)</title>
+            </circle>
             
             <!-- X-Achse Labels -->
             {#each xLabels as { x, label }}
@@ -218,18 +234,18 @@
         </svg>
       </div>
       
-      <!-- Legende -->
-      <div class="flex items-center gap-6 mt-4 text-sm text-base-content/60">
+      <!-- Legende (vereinfacht, nicht technisch) -->
+      <div class="flex flex-wrap items-center gap-4 sm:gap-6 mt-6 text-xs sm:text-sm text-gray-600">
         <div class="flex items-center gap-2">
-          <div class="w-8 h-0.5 border-t-2 border-dashed border-current opacity-30"></div>
-          <span>Globale Baseline</span>
+          <div class="w-6 h-0.5 border-t-2 border-dashed border-gray-400"></div>
+          <span>Norm</span>
         </div>
         <div class="flex items-center gap-2">
-          <div class="w-8 h-0.5 bg-primary"></div>
-          <span>Deine Baseline</span>
+          <div class="w-6 h-1 bg-purple-600 rounded-full"></div>
+          <span>Deine Linie</span>
         </div>
         <div class="flex items-center gap-2">
-          <div class="w-0.5 h-4 bg-secondary border-dashed"></div>
+          <div class="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
           <span>Jetzt</span>
         </div>
       </div>

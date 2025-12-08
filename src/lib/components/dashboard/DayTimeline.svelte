@@ -49,12 +49,15 @@
 <div class="card-modern" id="day-timeline">
   <div class="card-body">
     <!-- Header -->
-    <h3 class="text-xl font-bold text-base-content mb-4">
+    <h3 class="text-xl font-bold text-gray-900 mb-1">
       Dein Tagesverlauf
     </h3>
+    <p class="text-sm text-gray-600 mb-4">
+      Kontext für die verschiedenen Tagesphasen
+    </p>
     
-    <!-- Timeline Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+    <!-- Timeline Grid (kompakter) -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
       {#each SEGMENT_DEFINITIONS as segmentDef}
         {@const isActive = segmentDef.segment === currentSegment}
         {@const hasData = hasUserDataForSegment(segmentDef.segment)}
@@ -64,25 +67,28 @@
           class:active={isActive}
           class:has-data={hasData}
         >
-          <!-- Icon + Data Indicator -->
+          <!-- Icon + Data Indicator + "Jetzt" Label -->
           <div class="flex items-center justify-between mb-2">
-            <span class="material-symbols-outlined text-3xl segment-icon">
+            <span class="material-symbols-outlined text-2xl segment-icon">
               {segmentDef.icon}
             </span>
             
-            {#if hasData}
-              <span class="material-symbols-outlined text-sm text-success" title="Daten vorhanden">
-                check_circle
-              </span>
-            {:else}
-              <span class="material-symbols-outlined text-sm text-base-content/30" title="Keine Daten">
-                radio_button_unchecked
-              </span>
-            {/if}
+            <div class="flex items-center gap-1.5">
+              {#if isActive}
+                <span class="text-[10px] font-bold text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full">
+                  JETZT
+                </span>
+              {/if}
+              {#if hasData}
+                <div class="w-2 h-2 rounded-full bg-purple-600" title="Daten vorhanden"></div>
+              {:else}
+                <div class="w-2 h-2 rounded-full bg-gray-300" title="Noch keine Daten"></div>
+              {/if}
+            </div>
           </div>
           
           <!-- Segment Name -->
-          <div class="font-bold text-base mb-1 segment-name">
+          <div class="font-bold text-sm mb-0.5 segment-name">
             {segmentDef.segment === 'morning' ? 'Morgens' :
              segmentDef.segment === 'forenoon' ? 'Vormittags' :
              segmentDef.segment === 'midday' ? 'Mittags' :
@@ -91,63 +97,79 @@
           </div>
           
           <!-- Hours Range -->
-          <div class="text-xs text-base-content/60 mb-2">
+          <div class="text-[11px] text-gray-500 mb-2">
             {segmentDef.startHour}:00 - {segmentDef.endHour === 6 ? '5:59' : `${segmentDef.endHour - 1}:59`}
           </div>
           
-          <!-- Description -->
-          <div class="text-sm text-base-content/70">
+          <!-- Description (kompakter) -->
+          <div class="text-xs text-gray-600 leading-snug">
             {segmentDef.description}
           </div>
         </div>
       {/each}
     </div>
     
-    <!-- Legende -->
-    <div class="flex items-center gap-6 mt-6 text-sm text-base-content/60">
-      <div class="flex items-center gap-2">
-        <span class="material-symbols-outlined text-sm text-success">check_circle</span>
+    <!-- Legende (kompakter, mit farbigen Punkten) -->
+    <div class="flex flex-wrap items-center gap-4 mt-5 text-xs text-gray-600 border-t border-gray-200 pt-4">
+      <div class="flex items-center gap-1.5">
+        <div class="w-2 h-2 rounded-full bg-purple-600"></div>
         <span>Daten vorhanden</span>
       </div>
-      <div class="flex items-center gap-2">
-        <span class="material-symbols-outlined text-sm text-base-content/30">radio_button_unchecked</span>
-        <span>Keine Daten</span>
+      <div class="flex items-center gap-1.5">
+        <div class="w-2 h-2 rounded-full bg-gray-300"></div>
+        <span>Noch keine Tests</span>
       </div>
-      <div class="flex items-center gap-2">
-        <div class="w-3 h-3 rounded-full bg-primary"></div>
-        <span>Aktuelles Segment</span>
+      <div class="flex items-center gap-1.5">
+        <div class="w-3 h-3 rounded border-2 border-purple-600"></div>
+        <span>Aktueller Abschnitt</span>
       </div>
     </div>
+    
+    <!-- Kontext-Zeile für aktives Segment -->
+    {#each SEGMENT_DEFINITIONS.filter(s => s.segment === currentSegment) as activeSegmentDef}
+      <div class="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg text-sm text-gray-700">
+        <span class="font-semibold text-purple-700">
+          {activeSegmentDef.segment === 'morning' ? 'Morgens' :
+           activeSegmentDef.segment === 'forenoon' ? 'Vormittags' :
+           activeSegmentDef.segment === 'midday' ? 'Mittags' :
+           activeSegmentDef.segment === 'afternoon' ? 'Nachmittags' :
+           'Abends'}:
+        </span>
+        {activeSegmentDef.description}
+      </div>
+    {/each}
   </div>
 </div>
 
 <style>
   .card-modern {
-    @apply bg-base-100 rounded-2xl shadow-lg border border-base-300;
+    @apply bg-white rounded-2xl shadow-lg border border-gray-200;
   }
   
   .segment-card {
-    @apply p-4 rounded-xl border-2 border-base-300 bg-base-100 transition-all duration-200;
+    @apply p-3 rounded-lg border-2 border-gray-200 bg-white transition-all duration-200;
   }
   
   .segment-card:hover {
-    @apply shadow-md border-primary/30;
+    @apply shadow-md border-purple-300;
   }
   
+  /* Aktives Segment: Stark hervorheben */
   .segment-card.active {
-    @apply border-primary bg-primary/5;
+    @apply border-purple-500 bg-purple-50 shadow-lg;
   }
   
   .segment-card.active .segment-icon {
-    @apply text-primary;
+    @apply text-purple-600;
   }
   
   .segment-card.active .segment-name {
-    @apply text-primary;
+    @apply text-purple-700;
   }
   
+  /* Cards mit Daten: Subtiler Hinweis */
   .segment-card.has-data:not(.active) {
-    @apply border-success/30;
+    @apply border-purple-200 bg-purple-50/30;
   }
   
   .material-symbols-outlined {
