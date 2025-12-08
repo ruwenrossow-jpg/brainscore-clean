@@ -34,53 +34,45 @@
   const xScale = (hour: number) => (hour / 23) * chartWidth;
   const yScale = (value: number) => chartHeight - (value / 100) * chartHeight;
   
-  // SVG Pfad generieren (für Kurven)
-  function generatePath(points: { x: number; y: number }[]): string {
+  // SVG Pfad generieren (für glatte Kurven mit Catmull-Rom Splines)
+  function generateSmoothPath(points: { x: number; y: number }[]): string {
     if (points.length === 0) return '';
+    if (points.length === 1) return `M ${points[0].x},${points[0].y}`;
     
-    // Smooth Curve mit Catmull-Rom Splines (vereinfacht: Linear)
+    // Monotone Cubic Interpolation (vereinfacht für glatte Kurven)
     let path = `M ${points[0].x},${points[0].y}`;
     
-    for (let i = 1; i < points.length; i++) {
-      path += ` L ${points[i].x},${points[i].y}`;
+    for (let i = 0; i < points.length - 1; i++) {
+      const current = points[i];
+      const next = points[i + 1];
+      
+      // Berechne Kontrollpunkte für Bezier-Kurve
+      const cp1x = current.x + (next.x - current.x) / 3;
+      const cp1y = current.y + (next.y - current.y) / 3;
+      const cp2x = current.x + 2 * (next.x - current.x) / 3;
+      const cp2y = current.y + 2 * (next.y - current.y) / 3;
+      
+      path += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${next.x},${next.y}`;
     }
     
     return path;
   }
   
-  // Globale Baseline Pfad
-  $: globalPath = generatePath(
+  // Globale Baseline Pfad (glatte graue Linie)
+  $: globalPath = generateSmoothPath(
     userBaseline.map((p) => ({
       x: xScale(p.hour),
       y: yScale(p.globalValue),
     }))
   );
   
-  // User Baseline Pfad (nur Punkte mit User-Daten verbinden)
-  $: userPath = (() => {
-    const userPoints = userBaseline
-      .filter((p) => p.hasUserData) // NUR Punkte mit User-Daten!
-      .map((p) => ({
-        hour: p.hour,
-        value: p.userValue ?? p.globalValue,
-      }))
-      .map((p) => ({
-        x: xScale(p.hour),
-        y: yScale(p.value),
-      }));
-    
-    return generatePath(userPoints);
-  })();
-  
-  // Datenpunkte (nur wo User-Daten vorhanden)
-  $: dataPoints = userBaseline
-    .filter((p) => p.hasUserData)
-    .map((p) => ({
-      hour: p.hour,
+  // User Baseline Pfad (glatte lila Linie - ALLE 24 Stunden)
+  $: userPath = generateSmoothPath(
+    userBaseline.map((p) => ({
       x: xScale(p.hour),
       y: yScale(p.userValue ?? p.globalValue),
-      value: p.userValue ?? p.globalValue,
-    }));
+    }))
+  );
   
   // Aktueller Zeitpunkt (vertikale Linie)
   $: currentX = xScale(currentHour);
@@ -143,43 +135,27 @@
               />
             {/each}
             
-            <!-- Globale Baseline (gestrichelte Linie) -->
+            <!-- Globale Baseline (gestrichelte graue Linie - OHNE Punkte) -->
             <path
               d={globalPath}
               fill="none"
-              stroke="currentColor"
-              stroke-opacity="0.3"
+              stroke="#9ca3af"
+              stroke-opacity="0.5"
               stroke-width="2"
-              stroke-dasharray="4 4"
+              stroke-dasharray="6 4"
+              stroke-linecap="round"
             />
             
-            <!-- User Baseline (durchgezogene Linie) -->
-            {#if userPath}
-              <path
-                d={userPath}
-                fill="none"
-                stroke="#9333ea"
-                stroke-width="4"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="drop-shadow-md"
-              />
-            {/if}
-            
-            <!-- Datenpunkte (User-Daten) - größer für Mobile -->
-            {#each dataPoints as { x, y, hour, value }}
-              <circle
-                cx={x}
-                cy={y}
-                r="7"
-                fill="#9333ea"
-                stroke="white"
-                stroke-width="3"
-                class="drop-shadow-lg cursor-pointer hover:r-9 transition-all"
-              >
-                <title>{hour}:00 - Score: {Math.round(value)}</title>
-              </circle>
-            {/each}
+            <!-- User Baseline (durchgezogene lila Linie - OHNE Punkte) -->
+            <path
+              d={userPath}
+              fill="none"
+              stroke="#9333ea"
+              stroke-width="3"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="drop-shadow-sm"
+            />
             
             <!-- Aktueller Zeitpunkt (vertikale Linie + Marker oben) -->
             <line
@@ -204,22 +180,33 @@
               <title>Jetzt ({currentHour}:00)</title>
             </circle>
             
-            <!-- Heutige Tests als Marker -->
+            <!-- Heutige Tests als Marker (separate Layer) -->
             {#each todayTests as test}
               {@const x = xScale(test.hour)}
-              {@const y = yScale(test.baselineAtHour)}
-              {@const color = test.delta >= 10 ? '#22c55e' : test.delta <= -10 ? '#ef4444' : '#a855f7'}
+              {@const y = yScale(test.score)}
+              {@const isAbove = test.delta > 0}
+              {@const isBelow = test.delta < 0}
+              {@const color = isAbove ? '#22c55e' : isBelow ? '#ef4444' : '#6b7280'}
               
               <circle
                 cx={x}
                 cy={y}
-                r="6"
+                r="7"
                 fill={color}
                 stroke="white"
-                stroke-width="2"
-                class="drop-shadow-md"
+                stroke-width="2.5"
+                class="drop-shadow-lg"
               >
-                <title>Test: {test.score} ({test.delta > 0 ? '+' : ''}{Math.round(test.delta)})</title>
+                <title>
+                  Heute {test.hour}:00 - Score: {Math.round(test.score)}
+                  {#if test.delta > 0}
+                    (+{Math.round(test.delta)} über deiner Linie)
+                  {:else if test.delta < 0}
+                    ({Math.round(test.delta)} unter deiner Linie)
+                  {:else}
+                    (auf deiner Linie)
+                  {/if}
+                </title>
               </circle>
             {/each}
             
@@ -254,28 +241,28 @@
         </svg>
       </div>
       
-      <!-- Legende (vereinfacht, nicht technisch) -->
-      <div class="flex flex-wrap items-center gap-4 sm:gap-6 mt-6 text-xs sm:text-sm text-gray-600">
+      <!-- Legende (gestrafft, max. 4-5 Einträge) -->
+      <div class="flex flex-wrap items-center gap-3 sm:gap-5 mt-5 text-xs text-gray-600 border-t border-gray-200 pt-4">
         <div class="flex items-center gap-2">
-          <div class="w-6 h-0.5 border-t-2 border-dashed border-gray-400"></div>
+          <div class="w-5 h-0.5 border-t-2 border-dashed border-gray-400"></div>
           <span>Norm</span>
         </div>
         <div class="flex items-center gap-2">
-          <div class="w-6 h-1 bg-purple-600 rounded-full"></div>
+          <div class="w-5 h-0.5 bg-purple-600"></div>
           <span>Deine Linie</span>
         </div>
         <div class="flex items-center gap-2">
-          <div class="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
+          <div class="w-2 h-2 bg-orange-500 rounded-full"></div>
           <span>Jetzt</span>
         </div>
         {#if todayTests.length > 0}
           <div class="flex items-center gap-2">
-            <div class="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-            <span>Heute über Baseline</span>
+            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+            <span>Tests über Linie</span>
           </div>
           <div class="flex items-center gap-2">
-            <div class="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
-            <span>Heute unter Baseline</span>
+            <div class="w-2 h-2 bg-red-500 rounded-full"></div>
+            <span>Tests unter Linie</span>
           </div>
         {/if}
       </div>

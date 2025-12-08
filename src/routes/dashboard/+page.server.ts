@@ -15,7 +15,7 @@
 import type { PageServerLoad } from './$types';
 import { requireOnboarding } from '$lib/server/auth.guard';
 import { getForecastForNow, getUserBaseline, getTodayDeviations } from '$lib/services/forecastService';
-import { getTypicalScoreForSegment } from '$lib/types/forecast';
+import { getTypicalScoreForSegment, getHoursForSegment, SEGMENT_DEFINITIONS, type DaySegment } from '$lib/types/forecast';
 
 export const load: PageServerLoad = async (event) => {
   // Guard: Nur eingeloggte User mit abgeschlossenem Onboarding
@@ -55,6 +55,38 @@ export const load: PageServerLoad = async (event) => {
     .gte('created_at', startOfToday.toISOString())
     .lte('created_at', endOfToday.toISOString());
   
+  // Berechne Segment-Zusammenfassungen (für Timeline-Kacheln)
+  const segmentSummaries = SEGMENT_DEFINITIONS.map((segmentDef) => {
+    const segment = segmentDef.segment;
+    const hours = getHoursForSegment(segment);
+    
+    // Typischer Score für dieses Segment
+    const typicalSegmentScore = getTypicalScoreForSegment(userBaseline, segment);
+    
+    // Heutige Tests in diesem Segment
+    const testsInSegment = (todayDeviations?.tests ?? []).filter((test) =>
+      hours.includes(test.hour)
+    );
+    
+    // Durchschnitt der heutigen Tests in diesem Segment
+    const todayAverageScore = testsInSegment.length > 0
+      ? Math.round(testsInSegment.reduce((sum, t) => sum + t.score, 0) / testsInSegment.length)
+      : null;
+    
+    // Delta vs. typische Linie
+    const segmentDelta = todayAverageScore !== null
+      ? todayAverageScore - typicalSegmentScore
+      : null;
+    
+    return {
+      segment,
+      todayTestCount: testsInSegment.length,
+      todayAverageScore,
+      typicalSegmentScore,
+      delta: segmentDelta,
+    };
+  });
+  
   return {
     profile,
     forecast,
@@ -63,5 +95,6 @@ export const load: PageServerLoad = async (event) => {
     typicalForSegment,
     delta,
     todayTestCount: todayTestCount ?? 0,
+    segmentSummaries,
   };
 };

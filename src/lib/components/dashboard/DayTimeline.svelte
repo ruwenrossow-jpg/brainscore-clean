@@ -7,6 +7,7 @@
    * - Statische Beschreibung
    * - Highlight des aktuellen Segments
    * - Indikator ob User-Daten vorhanden (hasUserData)
+   * - Heutige Test-Counts und Delta vs. Baseline
    */
   
   import type { DaySegment, BaselinePoint } from '$lib/types/forecast';
@@ -14,6 +15,16 @@
   
   export let currentSegment: DaySegment;
   export let userBaseline: BaselinePoint[];
+  
+  interface SegmentSummary {
+    segment: DaySegment;
+    todayTestCount: number;
+    todayAverageScore: number | null;
+    typicalSegmentScore: number;
+    delta: number | null;
+  }
+  
+  export let segmentSummaries: SegmentSummary[] = [];
   
   // Prüfe ob User Daten für ein Segment hat
   function hasUserDataForSegment(segment: DaySegment): boolean {
@@ -61,11 +72,14 @@
       {#each SEGMENT_DEFINITIONS as segmentDef}
         {@const isActive = segmentDef.segment === currentSegment}
         {@const hasData = hasUserDataForSegment(segmentDef.segment)}
+        {@const summary = segmentSummaries.find(s => s.segment === segmentDef.segment)}
         
         <div
           class="segment-card"
           class:active={isActive}
           class:has-data={hasData}
+          class:positive-delta={summary?.delta !== null && summary.delta >= 5}
+          class:negative-delta={summary?.delta !== null && summary.delta <= -5}
         >
           <!-- Icon + Data Indicator + "Jetzt" Label -->
           <div class="flex items-center justify-between mb-2">
@@ -102,9 +116,54 @@
           </div>
           
           <!-- Description (kompakter) -->
-          <div class="text-xs text-gray-600 leading-snug">
+          <div class="text-xs text-gray-600 leading-snug mb-2">
             {segmentDef.description}
           </div>
+          
+          <!-- Segment Metrics (heutige Daten) -->
+          {#if summary}
+            {#if summary.todayTestCount > 0}
+              <div class="segment-metrics mt-3 pt-3 border-t border-gray-200">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-[10px] text-gray-500">Heute:</span>
+                  <span class="text-xs font-semibold text-gray-700">
+                    {summary.todayTestCount} Test{summary.todayTestCount === 1 ? '' : 's'}
+                  </span>
+                </div>
+                {#if summary.todayAverageScore !== null}
+                  <div class="flex items-center justify-between mb-1">
+                    <span class="text-[10px] text-gray-500">Ø Score:</span>
+                    <span class="text-xs font-medium text-gray-700">
+                      {summary.todayAverageScore}
+                    </span>
+                  </div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-[10px] text-gray-500">Typisch:</span>
+                    <span class="text-xs font-medium text-gray-500">
+                      {summary.typicalSegmentScore}
+                    </span>
+                  </div>
+                  {#if summary.delta !== null && Math.abs(summary.delta) >= 3}
+                    <div class="mt-2 text-center">
+                      {#if summary.delta > 0}
+                        <span class="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+                          ▲ {Math.round(summary.delta)}
+                        </span>
+                      {:else}
+                        <span class="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">
+                          ▼ {Math.abs(Math.round(summary.delta))}
+                        </span>
+                      {/if}
+                    </div>
+                  {/if}
+                {/if}
+              </div>
+            {:else}
+              <div class="segment-metrics mt-3 pt-3 border-t border-gray-200">
+                <span class="text-[10px] text-gray-400 italic">Noch keine Tests heute</span>
+              </div>
+            {/if}
+          {/if}
         </div>
       {/each}
     </div>
@@ -170,6 +229,20 @@
   /* Cards mit Daten: Subtiler Hinweis */
   .segment-card.has-data:not(.active) {
     @apply border-purple-200 bg-purple-50/30;
+  }
+  
+  /* Positive Delta: Leicht grüner Rahmen */
+  .segment-card.positive-delta {
+    @apply border-green-300 bg-green-50/20;
+  }
+  
+  /* Negative Delta: Leicht orangener Rahmen */
+  .segment-card.negative-delta {
+    @apply border-orange-300 bg-orange-50/20;
+  }
+  
+  .segment-metrics {
+    @apply text-left;
   }
   
   .material-symbols-outlined {
