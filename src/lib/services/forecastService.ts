@@ -43,6 +43,14 @@ type SartSession = Database['public']['Tables']['sart_sessions']['Row'];
 const BASELINE_LOOKBACK_DAYS = 30;
 
 /**
+ * Schwellwert für stabile Baseline (Anzahl Tests)
+ * 
+ * - Unter diesem Wert: Onboarding-Phase → Baseline nutzt ALLE verfügbaren Daten (inkl. heute)
+ * - Ab diesem Wert: Stabile Phase → Baseline nutzt nur Tests BIS GESTERN (heutige Tests nur für Forecast)
+ */
+const MIN_TESTS_FOR_STABLE_BASELINE = 15;
+
+/**
  * LEGACY: Alte Decay-/Modulation-Konstanten (nicht mehr primär verwendet)
  * Neue Logik nutzt 2h-Bins und Local-Window-Gewichtung
  */
@@ -107,17 +115,21 @@ interface BinResult {
 /**
  * Berechnet die User-Baseline (24 Stunden) mit 2-Stunden-Bins
  * 
- * NEUE LOGIK v2:
+ * NEUE LOGIK v3 (mit zeitlicher Trennung):
  * - Gruppiert Tests in 12 Bins à 2 Stunden (statt 5 grober Segmente)
  * - Gewichtet Recent Tests (letzten 1-2) stärker als Bin-Durchschnitt
  * - Reduziert globalen Einfluss mit steigender Datenmenge
- * - Baseline ist stärker von eigenen Tests geprägt
+ * - **Zeitliche Trennung:** Baseline nutzt standardmäßig nur Tests BIS GESTERN
+ *   - Ausnahme: Onboarding-Phase (<15 Tests) → nutzt alle verfügbaren Daten (inkl. heute)
+ *   - Rationale: Baseline = "typischer Tagesverlauf", nicht durch heutige Tests beeinflusst
  * 
  * Algorithmus:
  * 1. Lade alle Sessions der letzten 30 Tage
- * 2. Gruppiere nach 12 Bins (0-1h, 2-3h, ..., 22-23h)
- * 3. Pro Bin: Berechne Weighted Average aus Recent + BinMean + GlobalBinValue
- * 4. Erzeuge 24 BaselinePoints (2 pro Bin)
+ * 2. Zeitliche Filterung: Nur Tests bis gestern (außer Onboarding)
+ * 3. Berechne Overall-Average als Fallback
+ * 4. Gruppiere nach 12 Bins (0-1h, 2-3h, ..., 22-23h)
+ * 5. Pro Bin: Berechne Weighted Average aus Recent + BinMean + GlobalBinValue
+ * 6. Erzeuge 24 BaselinePoints (2 pro Bin)
  * 
  * @param supabase - Supabase Client (Server oder Browser)
  * @param userId - Supabase User ID
@@ -148,17 +160,38 @@ export async function getUserBaseline(
     return getAllGlobalBaselinePoints();
   }
 
-  // 2. Berechne Overall-Average (globaler Fallback)
-  const allScores = sessions.map((s) => s.brain_score);
+  // 2. Zeitliche Filterung: Baseline-Daten vs. Heute
+  const now = new Date();
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
+  
+  // Prüfe Gesamtanzahl Tests für Onboarding-Phase
+  const totalTests = sessions.length;
+  const isOnboarding = totalTests < MIN_TESTS_FOR_STABLE_BASELINE;
+  
+  // Filtere Sessions basierend auf Phase:
+  // - Onboarding (<15 Tests): Nutze ALLE Daten (inkl. heute)
+  // - Stabil (≥15 Tests): Nutze nur Tests BIS GESTERN
+  const baselineSessions = isOnboarding 
+    ? sessions 
+    : sessions.filter(s => new Date(s.created_at) < startOfToday);
+  
+  // Fallback: Wenn nach Filterung keine Daten → Global Baseline
+  if (baselineSessions.length === 0) {
+    return getAllGlobalBaselinePoints();
+  }
+
+  // 3. Berechne Overall-Average (globaler Fallback) aus Baseline-Sessions
+  const allScores = baselineSessions.map((s) => s.brain_score);
   const overallAverage = allScores.reduce((sum, s) => sum + s, 0) / allScores.length;
 
-  // 3. Gruppiere Sessions nach 12 Bins (à 2 Stunden)
+  // 4. Gruppiere Baseline-Sessions nach 12 Bins (à 2 Stunden)
   const bins: BinStats[] = Array.from({ length: NUM_BINS }, () => ({
     scores: [],
     timestamps: []
   }));
 
-  for (const session of sessions) {
+  for (const session of baselineSessions) {
     const sessionDate = new Date(session.created_at);
     const hour = sessionDate.getHours();
     const binIndex = getBinIndexForHour(hour);
@@ -167,7 +200,7 @@ export async function getUserBaseline(
     bins[binIndex].timestamps.push(sessionDate);
   }
 
-  // 4. Berechne userBinValue für jeden Bin
+  // 5. Berechne userBinValue für jeden Bin
   const binResults: BinResult[] = [];
 
   for (let i = 0; i < NUM_BINS; i++) {
@@ -233,7 +266,7 @@ export async function getUserBaseline(
     });
   }
 
-  // 5. Erzeuge 24 BaselinePoints (2 pro Bin)
+  // 6. Erzeuge 24 BaselinePoints (2 pro Bin)
   const baselinePoints: BaselinePoint[] = [];
 
   for (let hour = 0; hour < 24; hour++) {
