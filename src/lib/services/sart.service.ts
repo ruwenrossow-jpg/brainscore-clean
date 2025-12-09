@@ -116,6 +116,11 @@ export class SartService {
       return null;
     }
     
+    // Build cognitive insights
+    const { buildSessionInsights } = await import('$lib/utils/sessionInsights.utils');
+    const insights = buildSessionInsights(metrics);
+    const insightsJson = JSON.stringify(insights);
+    
     try {
       console.log('🔵 [SART Service] Attempting DB insert...');
       const { data, error } = await supabase
@@ -129,6 +134,7 @@ export class SartService {
           mean_rt_ms: metrics.meanReactionTimeMs,
           sd_rt_ms: metrics.sdReactionTimeMs,
           brain_score: metrics.score,
+          insights_json: insightsJson,
         } as any)
         .select('id')
         .single();

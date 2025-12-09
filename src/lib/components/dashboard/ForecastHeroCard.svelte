@@ -39,11 +39,6 @@
   function handleTestNow() {
     goto('/test');
   }
-  
-  function handleViewTimeline() {
-    const timeline = document.getElementById('day-timeline');
-    timeline?.scrollIntoView({ behavior: 'smooth' });
-  }
 </script>
 
 <div class="card-modern bg-gradient-to-br from-purple-50 via-white to-blue-50 border-2 border-purple-200">
@@ -155,10 +150,10 @@
       
       <button
         class="btn btn-outline btn-lg w-full gap-2"
-        on:click={handleViewTimeline}
+        on:click={() => goto('/focus-history')}
       >
-        <span class="material-symbols-outlined">schedule</span>
-        <span>Deinen Tag ansehen</span>
+        <span class="material-symbols-outlined">history</span>
+        <span>Fokus-Check Historie</span>
       </button>
     </div>
     

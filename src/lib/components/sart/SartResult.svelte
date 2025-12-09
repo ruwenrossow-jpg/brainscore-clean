@@ -6,6 +6,7 @@
   import { goto, invalidateAll } from '$app/navigation';
   import { getScoreBand } from '$lib/config/scoring';
   import type { SartMetrics } from '$lib/types/sart.types';
+  import { buildSessionInsights } from '$lib/utils/sessionInsights.utils';
   
   interface Props {
     metrics: SartMetrics | null;
@@ -13,6 +14,9 @@
   }
   
   let { metrics, onNext }: Props = $props();
+  
+  // Build cognitive insights for display
+  let insights = $derived(metrics ? buildSessionInsights(metrics) : null);
   
   let showDetails = $state(false);
   
@@ -74,6 +78,44 @@
         {/if}
       </div>
 
+      <!-- Cognitive Insights Reward -->
+      {#if insights && insights.blocks.length > 0}
+        <div class="w-full bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl border-2 border-purple-200 p-6 mb-6 animate-fadeIn">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="material-symbols-outlined text-2xl text-purple-600">psychology</span>
+            <h3 class="text-lg font-bold text-gray-900">Deine Kognitiven Bausteine</h3>
+          </div>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+            {#each insights.blocks as block}
+              {@const levelColors = {
+                low: 'bg-red-100 text-red-700 border-red-300',
+                medium: 'bg-amber-100 text-amber-700 border-amber-300',
+                high: 'bg-green-100 text-green-700 border-green-300',
+              }}
+              {@const levelIcons = {
+                low: 'trending_down',
+                medium: 'remove',
+                high: 'trending_up',
+              }}
+              <div class="border-2 rounded-lg p-3 {levelColors[block.level]} text-left">
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="material-symbols-outlined text-lg">{levelIcons[block.level]}</span>
+                  <span class="font-bold text-sm">{block.label}</span>
+                </div>
+                <p class="text-xs leading-relaxed opacity-90">
+                  {block.description.substring(0, 80)}...
+                </p>
+              </div>
+            {/each}
+          </div>
+          
+          <p class="text-xs text-gray-600 text-center">
+            💡 Detaillierte Bausteine in deiner Fokus-Check-Historie ansehen
+          </p>
+        </div>
+      {/if}
+
       <!-- Details Toggle -->
       <button 
         class="btn btn-ghost btn-sm mb-6 hover:bg-gray-100 transition-colors"
@@ -110,7 +152,7 @@
       {/if}
 
       <!-- CTAs -->
-      <div class="w-full space-y-4">
+      <div class="w-full space-y-3">
         <button 
           class="btn-gradient-primary w-full text-lg font-bold"
           onclick={goToDashboard}
@@ -118,6 +160,19 @@
           Zum Dashboard
           <span class="ml-2">→</span>
         </button>
+        
+        {#if insights && insights.blocks.length > 0}
+          <button 
+            class="btn btn-outline w-full text-base"
+            onclick={async () => {
+              await invalidateAll();
+              goto('/focus-history');
+            }}
+          >
+            <span class="material-symbols-outlined">psychology</span>
+            Alle Bausteine ansehen
+          </button>
+        {/if}
         
         <button 
           class="btn-secondary w-full text-base"
