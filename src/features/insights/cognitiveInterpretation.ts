@@ -76,13 +76,13 @@ function interpretInhibition(commissionErrorRate: number): CognitiveDimensionFee
   let shortText: string;
   
   if (commissionErrorRate <= INHIBITION_THRESHOLDS.low) {
-    level = 'low';
+    level = 'high'; // GRÜN: Gute Inhibition (niedrige Fehlerrate)
     shortText = 'Du hast die Stopp-Signale sehr gut erkannt und kaum impulsiv reagiert. Deine Impulskontrolle war in diesem Zeitraum stark.';
   } else if (commissionErrorRate > INHIBITION_THRESHOLDS.high) {
-    level = 'high';
+    level = 'low'; // ROT: Auffällige Impulsivität (hohe Fehlerrate)
     shortText = 'In diesem Test hast du häufiger auf Reize reagiert, bei denen du eigentlich stoppen solltest. Das spricht für eine eher impulsive Antworttendenz in dieser Situation.';
   } else {
-    level = 'medium';
+    level = 'medium'; // GELB: Mittlerer Bereich
     shortText = 'Deine Impulskontrolle lag im mittleren Bereich. Gelegentlich hast du auf Stopp-Signale reagiert, was bei hoher Geschwindigkeit normal ist.';
   }
   
@@ -103,13 +103,13 @@ function interpretVigilance(omissionErrorRate: number): CognitiveDimensionFeedba
   let shortText: string;
   
   if (omissionErrorRate <= VIGILANCE_THRESHOLDS.low) {
-    level = 'low'; // low = gut (niedrige Fehlerrate)
+    level = 'high'; // GRÜN: Gute Vigilanz (niedrige Fehlerrate)
     shortText = 'Du hast fast alle Zielreize rechtzeitig beantwortet – deine anhaltende Aufmerksamkeit war in diesem Test stabil.';
   } else if (omissionErrorRate > VIGILANCE_THRESHOLDS.high) {
-    level = 'high'; // high = auffällig
+    level = 'low'; // ROT: Auffällige Unaufmerksamkeit (hohe Fehlerrate)
     shortText = 'Du hast mehrere Reaktionen ausgelassen. Das kann auf nachlassende Konzentration oder eine hohe kognitive Belastung in diesem Zeitraum hindeuten.';
   } else {
-    level = 'medium';
+    level = 'medium'; // GELB: Mittlerer Bereich
     shortText = 'Deine Aufmerksamkeit war überwiegend stabil, mit einigen wenigen Aussetzern. Das ist bei längeren Tests völlig normal.';
   }
   
@@ -130,13 +130,13 @@ function interpretStability(goRTSd: number): CognitiveDimensionFeedback {
   let shortText: string;
   
   if (goRTSd <= STABILITY_THRESHOLDS.low) {
-    level = 'low'; // low = sehr stabil (niedrige SD)
+    level = 'high'; // GRÜN: Sehr stabile Reaktionen (niedrige SD)
     shortText = 'Deine Reaktionszeiten waren sehr gleichmäßig. Das spricht für eine konsistente Konzentration über die gesamte Testdauer.';
   } else if (goRTSd > STABILITY_THRESHOLDS.high) {
-    level = 'high'; // high = inkonsistent
+    level = 'low'; // ROT: Inkonsistente Reaktionen (hohe SD)
     shortText = 'Deine Reaktionszeiten schwankten deutlich. Das kann auf wechselnde Aufmerksamkeit oder äußere Ablenkungen hindeuten.';
   } else {
-    level = 'medium';
+    level = 'medium'; // GELB: Moderate Schwankungen
     shortText = 'Deine Reaktionen zeigten moderate Schwankungen – ein normales Muster bei kognitiven Tests mit mehreren Durchgängen.';
   }
   

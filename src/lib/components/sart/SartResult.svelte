@@ -19,6 +19,7 @@
   let insights = $derived(metrics ? buildSessionInsights(metrics) : null);
   
   let showDetails = $state(false);
+  let showBausteine = $state(true); // Desktop: offen, Mobile: geschlossen (per Media Query)
   
   let scoreBand = $derived(
     metrics ? getScoreBand(metrics.score) : null
@@ -78,41 +79,56 @@
         {/if}
       </div>
 
-      <!-- Cognitive Insights Reward -->
+      <!-- Cognitive Insights Reward (Collapsible) -->
       {#if insights && insights.blocks.length > 0}
-        <div class="w-full bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl border-2 border-purple-200 p-6 mb-6 animate-fadeIn">
-          <div class="flex items-center gap-2 mb-4">
-            <span class="material-symbols-outlined text-2xl text-purple-600">psychology</span>
-            <h3 class="text-lg font-bold text-gray-900">Deine Kognitiven Bausteine</h3>
-          </div>
-          
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-            {#each insights.blocks as block}
-              {@const levelColors = {
-                low: 'bg-red-100 text-red-700 border-red-300',
-                medium: 'bg-amber-100 text-amber-700 border-amber-300',
-                high: 'bg-green-100 text-green-700 border-green-300',
-              }}
-              {@const levelIcons = {
-                low: 'trending_down',
-                medium: 'remove',
-                high: 'trending_up',
-              }}
-              <div class="border-2 rounded-lg p-3 {levelColors[block.level]} text-left">
-                <div class="flex items-center gap-2 mb-2">
-                  <span class="material-symbols-outlined text-lg">{levelIcons[block.level]}</span>
-                  <span class="font-bold text-sm">{block.label}</span>
+        <div class="w-full mb-6 animate-fadeIn">
+          <!-- Collapsible Header -->
+          <button
+            onclick={() => showBausteine = !showBausteine}
+            class="w-full bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl border-2 border-purple-200 p-4 hover:border-purple-300 transition-all duration-200 text-left"
+          >
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-2xl text-purple-600">psychology</span>
+                <div>
+                  <h3 class="text-base font-bold text-gray-900">Deine Kognitiven Bausteine</h3>
+                  <p class="text-xs text-gray-600">Kurz zusammengefasst aus diesem Test</p>
                 </div>
-                <p class="text-xs leading-relaxed opacity-90">
-                  {block.description.substring(0, 80)}...
-                </p>
               </div>
-            {/each}
-          </div>
+              <span class="material-symbols-outlined text-2xl text-purple-600 transition-transform duration-200" class:rotate-180={showBausteine}>
+                expand_more
+              </span>
+            </div>
+          </button>
           
-          <p class="text-xs text-gray-600 text-center">
-            💡 Detaillierte Bausteine in deiner Fokus-Check-Historie ansehen
-          </p>
+          <!-- Collapsible Content -->
+          {#if showBausteine}
+            <div class="mt-3 bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl border-2 border-purple-200 p-4 animate-fadeIn">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {#each insights.blocks as block}
+                  {@const levelColors = {
+                    low: 'bg-red-100 text-red-700 border-red-300',
+                    medium: 'bg-amber-100 text-amber-700 border-amber-300',
+                    high: 'bg-green-100 text-green-700 border-green-300',
+                  }}
+                  {@const levelIcons = {
+                    low: 'trending_down',
+                    medium: 'remove',
+                    high: 'trending_up',
+                  }}
+                  <div class="border-2 rounded-lg p-2.5 {levelColors[block.level]} text-left">
+                    <div class="flex items-center gap-1.5 mb-1.5">
+                      <span class="material-symbols-outlined text-base">{levelIcons[block.level]}</span>
+                      <span class="font-bold text-xs">{block.label}</span>
+                    </div>
+                    <p class="text-xs leading-snug opacity-90">
+                      {block.description.substring(0, 70)}...
+                    </p>
+                  </div>
+                {/each}
+              </div>
+            </div>
+          {/if}
         </div>
       {/if}
 
@@ -161,19 +177,6 @@
           <span class="ml-2">→</span>
         </button>
         
-        {#if insights && insights.blocks.length > 0}
-          <button 
-            class="btn btn-outline w-full text-base"
-            onclick={async () => {
-              await invalidateAll();
-              goto('/focus-history');
-            }}
-          >
-            <span class="material-symbols-outlined">psychology</span>
-            Alle Bausteine ansehen
-          </button>
-        {/if}
-        
         <button 
           class="btn-secondary w-full text-base"
           onclick={onNext}
@@ -185,3 +188,13 @@
     </div>
   </div>
 {/if}
+
+<style>
+  .rotate-180 {
+    transform: rotate(180deg);
+  }
+  
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+</style>
