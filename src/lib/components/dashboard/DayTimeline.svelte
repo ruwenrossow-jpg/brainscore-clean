@@ -9,14 +9,15 @@
    * - Indikator ob User-Daten vorhanden (hasUserData)
    * - Heutige Test-Counts und Delta vs. Baseline
    * - Integrierte Story für aktuelles Segment
+   * 
+   * Mobile: Horizontales Swipe-Karussell
+   * Desktop: Grid-Layout
    */
   
+  import { onMount } from 'svelte';
   import type { DaySegment, BaselinePoint } from '$lib/types/forecast';
   import { SEGMENT_DEFINITIONS } from '$lib/types/forecast';
   import CurrentSegmentStory from './CurrentSegmentStory.svelte';
-  
-  export let currentSegment: DaySegment;
-  export let userBaseline: BaselinePoint[];
   
   interface SegmentSummary {
     segment: DaySegment;
@@ -26,7 +27,39 @@
     delta: number | null;
   }
   
-  export let segmentSummaries: SegmentSummary[] = [];
+  interface Props {
+    currentSegment: DaySegment;
+    userBaseline: BaselinePoint[];
+    segmentSummaries?: SegmentSummary[];
+  }
+  
+  let { 
+    currentSegment, 
+    userBaseline, 
+    segmentSummaries = [] 
+  }: Props = $props();
+  
+  // Mobile State: Ausgewähltes Segment (für Karussell)
+  let selectedSegment = $state<DaySegment>(currentSegment);
+  let isMobile = $state(false);
+  
+  onMount(() => {
+    // Initial check
+    isMobile = window.innerWidth < 768;
+    
+    // Update on resize
+    const handleResize = () => {
+      isMobile = window.innerWidth < 768;
+    };
+    window.addEventListener('resize', handleResize);
+    
+    return () => window.removeEventListener('resize', handleResize);
+  });
+  
+  // Wenn currentSegment sich ändert, selectedSegment updaten
+  $effect(() => {
+    selectedSegment = currentSegment;
+  });
   
   // Prüfe ob User Daten für ein Segment hat
   function hasUserDataForSegment(segment: DaySegment): boolean {
@@ -69,19 +102,25 @@
       Kontext für die verschiedenen Tagesphasen
     </p>
     
-    <!-- Timeline Grid (kompakter) -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+    <!-- Timeline: Desktop = Grid, Mobile = Horizontales Karussell -->
+    <div 
+      class:desktop-grid={!isMobile}
+      class:mobile-carousel={isMobile}
+    >
       {#each SEGMENT_DEFINITIONS as segmentDef}
         {@const isActive = segmentDef.segment === currentSegment}
+        {@const isSelected = segmentDef.segment === selectedSegment}
         {@const hasData = hasUserDataForSegment(segmentDef.segment)}
         {@const summary = segmentSummaries.find(s => s.segment === segmentDef.segment)}
         
-        <div
+        <button
           class="segment-card"
           class:active={isActive}
+          class:selected={isMobile && isSelected}
           class:has-data={hasData}
-          class:positive-delta={summary?.delta !== null && summary.delta >= 5}
-          class:negative-delta={summary?.delta !== null && summary.delta <= -5}
+          class:positive-delta={summary && summary.delta !== null && summary.delta >= 5}
+          class:negative-delta={summary && summary.delta !== null && summary.delta <= -5}
+          onclick={() => { if (isMobile) selectedSegment = segmentDef.segment; }}
         >
           <!-- Icon + Data Indicator + "Jetzt" Label -->
           <div class="flex items-center justify-between mb-2">
@@ -166,7 +205,7 @@
               </div>
             {/if}
           {/if}
-        </div>
+        </button>
       {/each}
     </div>
     
@@ -186,8 +225,11 @@
       </div>
     </div>
     
-    <!-- Story für aktuelles Segment -->
-    <CurrentSegmentStory {currentSegment} {segmentSummaries} />
+    <!-- Story für aktuelles Segment (Mobile: basiert auf selectedSegment, Desktop: currentSegment) -->
+    <CurrentSegmentStory 
+      currentSegment={isMobile ? selectedSegment : currentSegment} 
+      {segmentSummaries} 
+    />
   </div>
 </div>
 
@@ -196,44 +238,114 @@
     @apply bg-white rounded-2xl shadow-lg border border-gray-200;
   }
   
+  /* Desktop: Grid Layout (wie bisher) */
+  .desktop-grid {
+    display: grid;
+    grid-template-columns: repeat(1, 1fr);
+    gap: 0.75rem;
+  }
+  
+  @media (min-width: 640px) {
+    .desktop-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  
+  @media (min-width: 1024px) {
+    .desktop-grid {
+      grid-template-columns: repeat(5, 1fr);
+    }
+  }
+  
+  /* Mobile: Horizontales Karussell */
+  .mobile-carousel {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    gap: 0.75rem;
+    padding: 0.5rem 0;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+  }
+  
+  .mobile-carousel::-webkit-scrollbar {
+    display: none; /* Chrome, Safari */
+  }
+  
+  .mobile-carousel .segment-card {
+    flex: 0 0 85%;
+    scroll-snap-align: center;
+    min-width: 85%;
+  }
+  
   .segment-card {
     @apply p-3 rounded-lg border-2 border-gray-200 bg-white transition-all duration-200;
+    cursor: pointer;
+  }
+  
+  /* Entferne Button-Standardstyles */
+  .segment-card {
+    background: white;
+    border: 2px solid #e5e7eb;
+    text-align: left;
+    width: 100%;
   }
   
   .segment-card:hover {
     @apply shadow-md border-purple-300;
   }
   
-  /* Aktives Segment: Stark hervorheben */
+  /* Aktives Segment (Desktop): Stark hervorheben */
   .segment-card.active {
-    @apply border-purple-500 bg-purple-50 shadow-lg;
+    border-color: #9333ea;
+    background-color: #faf5ff;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
   }
   
   .segment-card.active .segment-icon {
-    @apply text-purple-600;
+    color: #9333ea;
   }
   
   .segment-card.active .segment-name {
-    @apply text-purple-700;
+    color: #7e22ce;
+  }
+  
+  /* Selected Segment (Mobile Karussell): Visuelle Hervorhebung */
+  .segment-card.selected {
+    border-color: #9333ea;
+    background-color: #faf5ff;
+    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+    transform: scale(1.02);
+  }
+  
+  .segment-card.selected .segment-icon {
+    color: #9333ea;
+  }
+  
+  .segment-card.selected .segment-name {
+    color: #7e22ce;
   }
   
   /* Cards mit Daten: Subtiler Hinweis */
-  .segment-card.has-data:not(.active) {
-    @apply border-purple-200 bg-purple-50/30;
+  .segment-card.has-data:not(.active):not(.selected) {
+    border-color: #e9d5ff;
+    background-color: rgba(250, 245, 255, 0.3);
   }
   
   /* Positive Delta: Leicht grüner Rahmen */
   .segment-card.positive-delta {
-    @apply border-green-300 bg-green-50/20;
+    border-color: #86efac;
+    background-color: rgba(240, 253, 244, 0.2);
   }
   
   /* Negative Delta: Leicht orangener Rahmen */
   .segment-card.negative-delta {
-    @apply border-orange-300 bg-orange-50/20;
+    border-color: #fdba74;
+    background-color: rgba(255, 247, 237, 0.2);
   }
   
   .segment-metrics {
-    @apply text-left;
+    text-align: left;
   }
   
   .material-symbols-outlined {

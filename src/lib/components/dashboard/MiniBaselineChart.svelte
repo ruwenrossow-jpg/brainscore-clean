@@ -16,12 +16,36 @@
   import type { BaselinePoint, TodayTestDeviation } from '$lib/types/forecast';
   import { onMount } from 'svelte';
   
-  export let userBaseline: BaselinePoint[];
-  export let currentHour: number = new Date().getHours();
-  export let todayTests: TodayTestDeviation[] = [];
+  interface Props {
+    userBaseline: BaselinePoint[];
+    currentHour?: number;
+    todayTests?: TodayTestDeviation[];
+  }
   
-  let chartError = false;
+  let { 
+    userBaseline, 
+    currentHour = new Date().getHours(), 
+    todayTests = [] 
+  }: Props = $props();
+  
+  let chartError = $state(false);
   let chartContainer: HTMLDivElement;
+  
+  // Mobile Detection (reactive)
+  let isMobile = $state(false);
+  
+  onMount(() => {
+    // Initial check
+    isMobile = window.innerWidth < 768;
+    
+    // Update on resize
+    const handleResize = () => {
+      isMobile = window.innerWidth < 768;
+    };
+    window.addEventListener('resize', handleResize);
+    
+    return () => window.removeEventListener('resize', handleResize);
+  });
   
   // Chart Dimensions (mobile-optimiert)
   const width = 800;
@@ -59,36 +83,36 @@
   }
   
   // Globale Baseline Pfad (glatte graue Linie)
-  $: globalPath = generateSmoothPath(
+  let globalPath = $derived(generateSmoothPath(
     userBaseline.map((p) => ({
       x: xScale(p.hour),
       y: yScale(p.globalValue),
     }))
-  );
+  ));
   
   // User Baseline Pfad (glatte lila Linie - ALLE 24 Stunden)
-  $: userPath = generateSmoothPath(
+  let userPath = $derived(generateSmoothPath(
     userBaseline.map((p) => ({
       x: xScale(p.hour),
       y: yScale(p.userValue ?? p.globalValue),
     }))
-  );
+  ));
   
   // Aktueller Zeitpunkt (vertikale Linie)
-  $: currentX = xScale(currentHour);
+  let currentX = $derived(xScale(currentHour));
   
   // X-Achse Labels (mobile-optimiert: weniger Labels)
-  $: xLabels = [0, 6, 12, 18].map((hour) => ({
+  let xLabels = $derived([0, 6, 12, 18].map((hour) => ({
     hour,
     x: xScale(hour),
     label: `${hour}h`,
-  }));
+  })));
   
   // Y-Achse Labels (0, 50, 100)
-  $: yLabels = [0, 50, 100].map((value) => ({
+  let yLabels = $derived([0, 50, 100].map((value) => ({
     value,
     y: yScale(value),
-  }));
+  })));
   
   onMount(() => {
     // Error Handling: Falls SVG nicht rendert
@@ -118,9 +142,15 @@
     </div>
     
     {#if !chartError}
-      <!-- SVG Chart (responsive, touch-friendly) -->
-      <div class="chart-wrapper overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-        <svg {width} {height} viewBox="0 0 {width} {height}" class="w-full h-auto min-w-[600px] sm:min-w-0">
+      <!-- SVG Chart (responsive, mobile: keine horizontale Scroll, ganzer Tag sichtbar) -->
+      <div class="chart-wrapper">
+        <svg 
+          {width} 
+          {height} 
+          viewBox="0 0 {width} {height}" 
+          class="w-full h-auto"
+          class:mobile-chart={isMobile}
+        >
           <g transform={`translate(${padding.left}, ${padding.top})`}>
             <!-- Y-Achse Grid Lines -->
             {#each yLabels as { value, y }}
@@ -180,35 +210,37 @@
               <title>Jetzt ({currentHour}:00)</title>
             </circle>
             
-            <!-- Heutige Tests als Marker (separate Layer) -->
-            {#each todayTests as test}
-              {@const x = xScale(test.hour)}
-              {@const y = yScale(test.score)}
-              {@const isAbove = test.delta > 0}
-              {@const isBelow = test.delta < 0}
-              {@const color = isAbove ? '#22c55e' : isBelow ? '#ef4444' : '#6b7280'}
-              
-              <circle
-                cx={x}
-                cy={y}
-                r="7"
-                fill={color}
-                stroke="white"
-                stroke-width="2.5"
-                class="drop-shadow-lg"
-              >
-                <title>
-                  Heute {test.hour}:00 - Score: {Math.round(test.score)}
-                  {#if test.delta > 0}
-                    (+{Math.round(test.delta)} über deiner Linie)
-                  {:else if test.delta < 0}
-                    ({Math.round(test.delta)} unter deiner Linie)
-                  {:else}
-                    (auf deiner Linie)
-                  {/if}
-                </title>
-              </circle>
-            {/each}
+            <!-- Heutige Tests als Marker (Desktop: alle, Mobile: versteckt - werden als Liste gezeigt) -->
+            {#if !isMobile}
+              {#each todayTests as test}
+                {@const x = xScale(test.hour)}
+                {@const y = yScale(test.score)}
+                {@const isAbove = test.delta > 0}
+                {@const isBelow = test.delta < 0}
+                {@const color = isAbove ? '#22c55e' : isBelow ? '#ef4444' : '#6b7280'}
+                
+                <circle
+                  cx={x}
+                  cy={y}
+                  r="7"
+                  fill={color}
+                  stroke="white"
+                  stroke-width="2.5"
+                  class="drop-shadow-lg"
+                >
+                  <title>
+                    Heute {test.hour}:00 - Score: {Math.round(test.score)}
+                    {#if test.delta > 0}
+                      (+{Math.round(test.delta)} über deiner Linie)
+                    {:else if test.delta < 0}
+                      ({Math.round(test.delta)} unter deiner Linie)
+                    {:else}
+                      (auf deiner Linie)
+                    {/if}
+                  </title>
+                </circle>
+              {/each}
+            {/if}
             
             <!-- X-Achse Labels -->
             {#each xLabels as { x, label }}
@@ -241,7 +273,7 @@
         </svg>
       </div>
       
-      <!-- Legende (gestrafft, max. 4-5 Einträge) -->
+      <!-- Legende (Mobile: vereinfacht auf 3 Einträge, Desktop: alle anzeigen) -->
       <div class="flex flex-wrap items-center gap-3 sm:gap-5 mt-5 text-xs text-gray-600 border-t border-gray-200 pt-4">
         <div class="flex items-center gap-2">
           <div class="w-5 h-0.5 border-t-2 border-dashed border-gray-400"></div>
@@ -255,7 +287,7 @@
           <div class="w-2 h-2 bg-orange-500 rounded-full"></div>
           <span>Jetzt</span>
         </div>
-        {#if todayTests.length > 0}
+        {#if todayTests.length > 0 && !isMobile}
           <div class="flex items-center gap-2">
             <div class="w-2 h-2 bg-green-500 rounded-full"></div>
             <span>Tests über Linie</span>
@@ -266,6 +298,39 @@
           </div>
         {/if}
       </div>
+      
+      <!-- Mobile: Test-Liste unterhalb des Charts (ersetzt die Punkte im Chart) -->
+      {#if isMobile && todayTests.length > 0}
+        <div class="mt-5 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <h4 class="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <span class="material-symbols-outlined text-base">schedule</span>
+            Deine heutigen Fokus-Checks
+          </h4>
+          <div class="space-y-2">
+            {#each todayTests as test}
+              {@const isAbove = test.delta > 0}
+              {@const isBelow = test.delta < 0}
+              <div class="flex items-center justify-between text-xs">
+                <span class="text-gray-600 font-medium">{test.hour}:00 Uhr</span>
+                <div class="flex items-center gap-2">
+                  <span class="font-bold text-gray-900">{Math.round(test.score)}</span>
+                  {#if isAbove}
+                    <span class="text-green-600 text-[10px] bg-green-50 px-2 py-0.5 rounded-full">
+                      ▲ {Math.round(test.delta)} über Linie
+                    </span>
+                  {:else if isBelow}
+                    <span class="text-red-600 text-[10px] bg-red-50 px-2 py-0.5 rounded-full">
+                      ▼ {Math.abs(Math.round(test.delta))} unter Linie
+                    </span>
+                  {:else}
+                    <span class="text-gray-500 text-[10px]">auf Linie</span>
+                  {/if}
+                </div>
+              </div>
+            {/each}
+          </div>
+        </div>
+      {/if}
     {:else}
       <!-- Fallback: Tabelle -->
       <div class="alert alert-warning mb-4">
@@ -316,12 +381,18 @@
   }
   
   .chart-wrapper {
-    @apply w-full overflow-x-auto;
+    @apply w-full;
   }
   
   svg {
     max-width: 100%;
     height: auto;
+  }
+  
+  /* Mobile: Chart im Panorama-Format, kein Scroll */
+  svg.mobile-chart {
+    aspect-ratio: 16 / 9;
+    min-height: 200px;
   }
   
   .material-symbols-outlined {
